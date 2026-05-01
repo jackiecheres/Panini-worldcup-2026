@@ -602,21 +602,16 @@ async function doRegister(){
   const pass2=document.getElementById('reg-pass2').value;
   const errEl=document.getElementById('reg-err');
   errEl.style.display='none';
-  if(!name||!username||pass.length<6){errEl.textContent=T('err_fields')+' (mín. 6)';errEl.style.display='block';return;}
+  if(!name||!username||pass.length<4){errEl.textContent=T('err_fields');errEl.style.display='block';return;}
   if(pass!==pass2){errEl.textContent=T('err_match');errEl.style.display='block';return;}
   const btn=document.getElementById('reg-btn');btn.disabled=true;btn.textContent='...';
   try {
-    // Check username taken
-    const{data:existing}=await sb.from('profiles').select('id').eq('username',username).maybeSingle();
+    const{data:existing}=await sb.from('users').select('id').eq('username',username).maybeSingle();
     if(existing){errEl.textContent=T('err_exists');errEl.style.display='block';btn.disabled=false;btn.textContent=T('reg_btn');return;}
-    // Create auth user with fake email based on username
-    const fakeEmail=username+'@paniniwc2026.app';
-    const{data,error}=await sb.auth.signUp({email:fakeEmail,password:pass});
-    if(error||!data.user){errEl.textContent='Error: '+(error?.message||'intenta de nuevo');errEl.style.display='block';btn.disabled=false;btn.textContent=T('reg_btn');return;}
-    // Create profile
-    await sb.from('profiles').insert({id:data.user.id,username,name});
-    currentUser={id:data.user.id,username,name,photo_url:null};
-    localStorage.setItem('panini_uid',data.user.id);
+    const{data,error}=await sb.from('users').insert({username,name,password:pass}).select().single();
+    if(error||!data){errEl.textContent='Error: '+(error?.message||'intenta de nuevo');errEl.style.display='block';btn.disabled=false;btn.textContent=T('reg_btn');return;}
+    currentUser={id:data.id,username:data.username,name:data.name,photo_url:data.photo_url||null};
+    localStorage.setItem('panini_uid',data.id);
     await loadAndShowMain();
   } catch(e){
     errEl.textContent='Error: '+e.message;errEl.style.display='block';
@@ -630,19 +625,11 @@ async function doLogin(){
   const errEl=document.getElementById('login-err');errEl.style.display='none';
   const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='...';
   try {
-    // Find profile by username
-    const{data:profile,error:profErr}=await sb.from('profiles').select('*').eq('username',username).maybeSingle();
-    if(profErr||!profile){
-      errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;
-    }
-    // Sign in with fake email
-    const fakeEmail=username+'@paniniwc2026.app';
-    const{data,error}=await sb.auth.signInWithPassword({email:fakeEmail,password:pass});
-    if(error||!data.user){
-      errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;
-    }
-    currentUser={id:data.user.id,username:profile.username,name:profile.name,photo_url:profile.photo_url};
-    localStorage.setItem('panini_uid',data.user.id);
+    const{data,error}=await sb.from('users').select('*').eq('username',username).eq('password',pass).maybeSingle();
+    if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;}
+    if(!data){errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;}
+    currentUser={id:data.id,username:data.username,name:data.name,photo_url:data.photo_url||null};
+    localStorage.setItem('panini_uid',data.id);
     await loadAndShowMain();
   } catch(e){
     errEl.textContent='Error: '+e.message;errEl.style.display='block';
@@ -651,7 +638,6 @@ async function doLogin(){
 }
 
 function doLogout(){
-  sb.auth.signOut();
   if(realtimeChannel)sb.removeChannel(realtimeChannel);
   currentUser=null;myStickers={};allUsersStickers={};allUsers=[];
   localStorage.removeItem('panini_uid');
@@ -667,14 +653,14 @@ function doLogout(){
 async function loadAndShowMain(){
   try {
     setLoading(T('loading'));
-    const[{data:mySt},{data:profiles},{data:allSt}]=await Promise.all([
+    const[{data:mySt},{data:users},{data:allSt}]=await Promise.all([
       sb.from('stickers').select('*').eq('user_id',currentUser.id),
-      sb.from('profiles').select('id,username,name,photo_url'),
+      sb.from('users').select('id,username,name,photo_url'),
       sb.from('stickers').select('*')
     ]);
     myStickers={};
     (mySt||[]).forEach(s=>{myStickers[s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
-    allUsers=profiles||[];
+    allUsers=users||[];
     allUsersStickers={};
     (allSt||[]).forEach(s=>{
       if(!allUsersStickers[s.user_id])allUsersStickers[s.user_id]={};
@@ -703,7 +689,7 @@ function subscribeRealtime(){
       }
       updateStats();renderCountryGrid();
     })
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'profiles'},p=>{
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'users'},p=>{
       if(p.new&&!allUsers.find(u=>u.id===p.new.id)){
         allUsers.push({id:p.new.id,username:p.new.username,name:p.new.name});
       }
@@ -1125,10 +1111,10 @@ async function saveProfile(){
   if(pass.length>0&&pass.length<6){errEl.textContent=lang==='es'?'Contraseña mín. 6 caracteres':'Password min. 6 characters';errEl.style.display='block';return;}
   const btn=document.getElementById('lbl-save-btn');btn.disabled=true;
   try {
-    const{error}=await sb.from('profiles').update({name,photo_url:photoUrl}).eq('id',currentUser.id);
+    const{error}=await sb.from('users').update({name,photo_url:photoUrl}).eq('id',currentUser.id);
     if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';btn.disabled=false;return;}
-    if(pass.length>=6){
-      const{error:passErr}=await sb.auth.updateUser({password:pass});
+    if(pass.length>=4){
+      const{error:passErr}=await sb.from('users').update({password:pass}).eq('id',currentUser.id);
       if(passErr){errEl.textContent='Error al cambiar contraseña: '+passErr.message;errEl.style.display='block';btn.disabled=false;return;}
     }
     currentUser={...currentUser,name,photo_url:photoUrl};
@@ -1372,16 +1358,23 @@ document.addEventListener('keydown',e=>{
   try { applyLang(); } catch(e){ console.warn('applyLang:',e); }
   hideLoading();
   try {
-    // Check existing Supabase session
-    const{data:{session}}=await sb.auth.getSession();
-    if(session?.user){
-      const{data:profile}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
-      if(profile){
-        currentUser={id:session.user.id,username:profile.username,name:profile.name,photo_url:profile.photo_url};
+    const savedId=localStorage.getItem('panini_uid');
+    if(savedId){
+      setLoading(T('loading'));
+      const{data,error}=await sb.from('users').select('*').eq('id',savedId).maybeSingle();
+      if(data&&!error){
+        currentUser={id:data.id,username:data.username,name:data.name,photo_url:data.photo_url||null};
         await loadAndShowMain();
+        return;
       }
+      localStorage.removeItem('panini_uid');
+      hideLoading();
     }
-  } catch(e){ console.error('Auto-login error:',e); }
+  } catch(e){
+    console.error('Auto-login error:',e);
+    localStorage.removeItem('panini_uid');
+    hideLoading();
+  }
 })();
 </script>
 </body>
