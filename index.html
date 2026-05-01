@@ -640,23 +640,28 @@ function doLogout(){
 
 // ── Load data ───────────────────────────────────────────────
 async function loadAndShowMain(){
-  setLoading(T('loading'));
-  const[{data:mySt},{data:users},{data:allSt}]=await Promise.all([
-    sb.from('stickers').select('*').eq('user_id',currentUser.id),
-    sb.from('users').select('id,username,name'),
-    sb.from('stickers').select('*')
-  ]);
-  myStickers={};
-  (mySt||[]).forEach(s=>{myStickers[s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
-  allUsers=users||[];
-  allUsersStickers={};
-  (allSt||[]).forEach(s=>{
-    if(!allUsersStickers[s.user_id])allUsersStickers[s.user_id]={};
-    allUsersStickers[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
-  });
-  hideLoading();
-  showMain();
-  subscribeRealtime();
+  try {
+    setLoading(T('loading'));
+    const[{data:mySt},{data:users},{data:allSt}]=await Promise.all([
+      sb.from('stickers').select('*').eq('user_id',currentUser.id),
+      sb.from('users').select('id,username,name,photo_url'),
+      sb.from('stickers').select('*')
+    ]);
+    myStickers={};
+    (mySt||[]).forEach(s=>{myStickers[s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
+    allUsers=users||[];
+    allUsersStickers={};
+    (allSt||[]).forEach(s=>{
+      if(!allUsersStickers[s.user_id])allUsersStickers[s.user_id]={};
+      allUsersStickers[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
+    });
+    hideLoading();
+    showMain();
+    subscribeRealtime();
+  } catch(e){
+    console.error('loadAndShowMain error:',e);
+    hideLoading();
+  }
 }
 
 function subscribeRealtime(){
@@ -1337,19 +1342,21 @@ document.addEventListener('keydown',e=>{
 
 // ── Init: auto-login ─────────────────────────────────────────
 (async()=>{
-  applyLang();
-  const savedId=localStorage.getItem('panini_uid');
-  if(savedId){
-    setLoading(T('loading'));
-    const{data,error}=await sb.from('users').select('*').eq('id',savedId).maybeSingle();
-    if(data&&!error){
-      currentUser=data;
-      await loadAndShowMain();
-      return;
-    } else {
-      localStorage.removeItem('panini_uid');
+  try { applyLang(); } catch(e){ console.warn('applyLang error:',e); }
+  try {
+    const savedId=localStorage.getItem('panini_uid');
+    if(savedId){
+      setLoading(T('loading'));
+      const{data,error}=await sb.from('users').select('*').eq('id',savedId).maybeSingle();
+      if(data&&!error){
+        currentUser=data;
+        await loadAndShowMain();
+        return;
+      } else {
+        localStorage.removeItem('panini_uid');
+      }
     }
-  }
+  } catch(e){ console.error('Init error:',e); }
   hideLoading();
 })();
 </script>
