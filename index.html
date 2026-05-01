@@ -239,7 +239,7 @@ p.sub{font-size:14px;color:var(--text2);margin-bottom:1.4rem}
             <div class="pass-wrap"><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password">
             <button class="eye-btn" type="button" onclick="togglePass('login-pass',this)" tabindex="-1">👁</button></div>
           </div>
-          <button class="btn-link-small" onclick="showReset()" id="lbl-forgot">¿Olvidaste tu contraseña?</button>
+          <button class="btn-link-small" onclick="showReset()" id="lbl-forgot" style="display:none">¿Olvidaste tu contraseña?</button>
           <p class="err" id="login-err">Usuario o contraseña incorrectos</p>
           <button class="btn-primary" id="login-btn" onclick="doLogin()">Entrar</button>
           <button class="btn-link" onclick="showRegister()" id="lbl-no-account">¿No tienes cuenta? Regístrate</button>
