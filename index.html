@@ -193,14 +193,16 @@ p.sub{font-size:14px;color:#888;margin-bottom:1.5rem}
     </div>
     <div class="user-pill">
       <span class="sync-dot" id="sync-dot" title="Sincronizado"></span>
+      <button id="lang-btn" onclick="toggleLang()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:0;line-height:1" title="Cambiar idioma">🇲🇽</button>
       <div class="avatar" id="header-avatar">S</div>
-      <button class="logout-btn" onclick="doLogout()">Salir</button>
+      <button class="logout-btn" id="logout-btn" onclick="doLogout()">Salir</button>
     </div>
   </div>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('mi-album')">Mi álbum</button>
+    <button class="tab" onclick="switchTab('repetidas')">Repetidas</button>
     <button class="tab" onclick="switchTab('grupo')">Grupo</button>
-    <button class="tab" onclick="switchTab('intercambios')">Intercambios</button>
+    <button class="tab" onclick="switchTab('intercambios')">Cambios</button>
     <button class="tab" onclick="switchTab('config')">Invitar</button>
   </div>
 
@@ -239,14 +241,32 @@ p.sub{font-size:14px;color:#888;margin-bottom:1.5rem}
     </div>
   </div>
 
+  <div class="tab-content" id="tab-repetidas" style="display:none">
+    <div class="content">
+      <div class="section-label" style="margin-bottom:4px">Mis repetidas</div>
+      <p style="font-size:13px;color:#999;margin-bottom:16px;line-height:1.5">+ sube el contador · − baja (si llega a 0 desaparece)</p>
+      <div id="repetidas-list"></div>
+    </div>
+  </div>
+
   <div class="tab-content" id="tab-config" style="display:none">
     <div class="content">
-      <div class="section-label" style="margin-bottom:14px">Código del grupo</div>
+      <div class="section-label" style="margin-bottom:14px">Invitar amigos</div>
       <div class="group-code-box">
-        <div class="group-code">WC2026</div>
-        <div class="group-code-label">Comparte este link con tus amigos para que creen su cuenta y entren al grupo</div>
+        <div style="font-size:32px;margin-bottom:8px">🔗</div>
+        <div style="font-size:15px;font-weight:700;color:#1a4d2e;margin-bottom:6px">Comparte el link de la app</div>
+        <div class="group-code-label">Cualquier persona que entre al link y cree su cuenta aparece automáticamente en tu grupo</div>
+        <button onclick="copyLink()" style="margin-top:14px;padding:10px 24px;background:#1a4d2e;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">Copiar link</button>
       </div>
-      <p style="font-size:13px;color:#aaa;line-height:1.6">Todos los usuarios comparten su colección en tiempo real. Los intercambios se calculan automáticamente.</p>
+      <div style="background:#fff;border-radius:12px;padding:14px 16px;border:1.5px solid #ebebeb">
+        <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:8px">¿Cómo funciona?</div>
+        <div style="font-size:13px;color:#888;line-height:1.8">
+          1. Comparte el link con tus amigos<br>
+          2. Ellos crean su cuenta<br>
+          3. Aparecen en tu pestaña <strong style="color:#555">Grupo</strong> automáticamente<br>
+          4. Puedes ver su colección y calcular intercambios en tiempo real
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -426,12 +446,13 @@ async function doRegister(){
   errEl.style.display='none';
   if(!name||!username||pass.length<4){errEl.textContent='Completa todos los campos (contraseña mín. 4 caracteres)';errEl.style.display='block';return;}
   if(pass!==pass2){errEl.textContent='Las contraseñas no coinciden';errEl.style.display='block';return;}
-  const btn=document.getElementById('reg-btn');btn.disabled=true;btn.textContent='Creando cuenta...';
+  const btn=document.getElementById('reg-btn');btn.disabled=true;btn.textContent=T('loading').split(' ')[0]+'...';
   const{data:existing}=await sb.from('users').select('id').eq('username',username).maybeSingle();
   if(existing){errEl.textContent='Ese usuario ya existe';errEl.style.display='block';btn.disabled=false;btn.textContent='Crear cuenta';return;}
   const{data,error}=await sb.from('users').insert({username,name,password:pass}).select().single();
-  if(error||!data){errEl.textContent='Error: '+(error?.message||'intenta de nuevo');errEl.style.display='block';btn.disabled=false;btn.textContent='Crear cuenta';return;}
+  if(error||!data){errEl.textContent='Error: '+(error?.message||'intenta de nuevo');errEl.style.display='block';btn.disabled=false;btn.textContent=T('reg_btn');return;}
   currentUser=data;
+  localStorage.setItem('panini_uid',data.id);
   await loadAndShowMain();
 }
 
@@ -439,26 +460,29 @@ async function doLogin(){
   const username=document.getElementById('login-user').value.trim().toLowerCase();
   const pass=document.getElementById('login-pass').value;
   const errEl=document.getElementById('login-err');errEl.style.display='none';
-  const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Entrando...';
+  const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent=T('loading').split(' ')[0]+'...';
   const{data,error}=await sb.from('users').select('*').eq('username',username).eq('password',pass).maybeSingle();
-  if(error||!data){errEl.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;}
+  if(error||!data){errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;}
   currentUser=data;
+  localStorage.setItem('panini_uid',data.id);
   await loadAndShowMain();
 }
 
 function doLogout(){
   if(realtimeChannel)sb.removeChannel(realtimeChannel);
   currentUser=null;myStickers={};allUsersStickers={};allUsers=[];
+  localStorage.removeItem('panini_uid');
   document.getElementById('screen-main').classList.remove('active');
   document.getElementById('screen-auth').classList.add('active');
   showLogin();
-  document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').textContent='Entrar';
+  document.getElementById('login-btn').disabled=false;
+  document.getElementById('login-btn').textContent=T('login_btn');
   document.getElementById('login-user').value='';document.getElementById('login-pass').value='';
 }
 
 // ── Load data ───────────────────────────────────────────────
 async function loadAndShowMain(){
-  setLoading('Cargando tu colección...');
+  setLoading(T('loading'));
   const[{data:mySt},{data:users},{data:allSt}]=await Promise.all([
     sb.from('stickers').select('*').eq('user_id',currentUser.id),
     sb.from('users').select('id,username,name'),
@@ -511,12 +535,13 @@ function showMain(){
 
 // ── Tabs ────────────────────────────────────────────────────
 function switchTab(id){
-  const ids=['mi-album','grupo','intercambios','config'];
+  const ids=['mi-album','repetidas','grupo','intercambios','config'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
   document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
   document.getElementById('tab-'+id).style.display='block';
   if(id==='grupo')renderMembers();
   if(id==='intercambios')renderTrades();
+  if(id==='repetidas')renderRepetidas();
 }
 
 // ── Stats ────────────────────────────────────────────────────
@@ -789,6 +814,230 @@ function renderTrades(){
   if(!found)list.innerHTML='<div class="empty-state">Sin intercambios posibles aún.<br>Marca tus repetidas y pide a tus amigos que hagan lo mismo.</div>';
 }
 
+// ── Repetidas ─────────────────────────────────────────────────
+function renderRepetidas(){
+  const list=document.getElementById('repetidas-list');list.innerHTML='';
+  // Gather all repeated stickers grouped by team
+  let totalReps=0;
+  const allSections=[
+    ...TEAMS.map(team=>({
+      name:team.flag+' '+team.name,
+      color:GROUP_COLORS[team.group]||'#1a4d2e',
+      items:teamStickerItems(team)
+    })),
+    ...SPECIALS.map(sec=>({
+      name:sec.name,color:'#7c4daa',
+      items:sec.stickers
+    }))
+  ];
+
+  allSections.forEach(sec=>{
+    const repItems=sec.items.filter(item=>{
+      const s=myStickers[String(item.id)];
+      return s&&s.have&&(s.repeated_count||0)>0;
+    });
+    if(!repItems.length)return;
+    totalReps+=repItems.length;
+
+    const block=document.createElement('div');
+    block.style='margin-bottom:14px;background:#fff;border-radius:12px;border:1.5px solid #ebebeb;overflow:hidden';
+
+    const header=document.createElement('div');
+    header.style=`background:${sec.color};color:#fff;padding:8px 14px;font-size:13px;font-weight:700`;
+    header.textContent=sec.name;
+    block.appendChild(header);
+
+    repItems.forEach(item=>{
+      const s=myStickers[String(item.id)];
+      const reps=s.repeated_count||0;
+      const numLabel=String(item.id).includes('-')?item.id.split('-')[1]:item.id;
+      const labelClean=item.label.includes('-')?item.label.split('-')[1]:item.label;
+
+      const row=document.createElement('div');
+      row.style='display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #f5f5f0';
+      row.innerHTML=`
+        <div>
+          <span style="font-size:13px;font-weight:700;color:#111">#${numLabel}</span>
+          <span style="font-size:12px;color:#aaa;margin-left:6px">${labelClean}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:12px;color:#7a5c00;background:#fffbea;padding:3px 10px;border-radius:20px;font-weight:700">x${reps+1} (${reps} extra)</span>
+          <div style="display:flex;gap:4px">
+            <button onclick="changeRep('${item.id}',1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #1a4d2e;background:#fff;color:#1a4d2e;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+            <button onclick="changeRep('${item.id}',-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #c0392b;background:#fff;color:#c0392b;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+          </div>
+        </div>`;
+      block.appendChild(row);
+    });
+    list.appendChild(block);
+  });
+
+  if(totalReps===0){
+    list.innerHTML='<div class="empty-state">No tienes estampas repetidas aún.</div>';
+  }
+}
+
+async function changeRep(id,delta){
+  const s=myStickers[String(id)];
+  if(!s||!s.have)return;
+  const current=s.repeated_count||0;
+  const newReps=Math.max(0,current+delta);
+  await saveSticker(id,true,newReps);
+  if(newReps===0){
+    // ya no es repetida, quitar de la vista
+  }
+  updateStats();
+  renderRepetidas();
+}
+
+function copyLink(){
+  const url=window.location.href;
+  navigator.clipboard.writeText(url).then(()=>showToast('Link copiado ✓')).catch(()=>{
+    prompt('Copia este link:',url);
+  });
+}
+
+// ── i18n ─────────────────────────────────────────────────────
+const I18N={
+  es:{
+    app_sub:'Tracker de estampas · 998 figuras · en tiempo real',
+    welcome:'Bienvenido',welcome_sub:'Inicia sesión para ver tu colección',
+    label_user:'Usuario',label_pass:'Contraseña',label_name:'Tu nombre',
+    label_confirm:'Confirmar contraseña',
+    login_btn:'Entrar',reg_btn:'Crear cuenta',
+    no_account:'¿No tienes cuenta? Regístrate',
+    have_account:'¿Ya tienes cuenta? Inicia sesión',
+    create_title:'Crear cuenta',create_sub:'Únete al grupo de intercambio',
+    err_fields:'Completa todos los campos (contraseña mín. 4 caracteres)',
+    err_match:'Las contraseñas no coinciden',err_exists:'Ese usuario ya existe',
+    err_login:'Usuario o contraseña incorrectos',
+    loading:'Cargando tu colección...',
+    tab_album:'Mi álbum',tab_reps:'Repetidas',tab_group:'Grupo',
+    tab_trades:'Cambios',tab_invite:'Invitar',
+    stat_have:'Tengo',stat_missing:'Faltan',stat_reps:'Repetidas',
+    progress:'Progreso del álbum',
+    filter_all:'Todos',filter_incomplete:'Incompletos',filter_complete:'Completos',
+    specials:'Secciones especiales',teams:'Equipos',
+    group_label:'Grupo',page_label:'p.',
+    legend_no:'No tengo',legend_have:'Tengo (1 tap)',legend_rep:'Repetida (2+ taps)',
+    tip:'1 tap = tengo · 2° tap = repetida · más taps = más repetidas · × para borrar',
+    mark_all:'✓ Marcar todas',unmark_all:'✗ Quitar todas',done:'Listo',
+    members:'Miembros del grupo',view_col:'Ver colección',view_trades:'Ver intercambios',
+    trades_title:'Oportunidades de intercambio',
+    trades_sub:'Tus repetidas que alguien necesita, y lo que te falta que alguien tiene de sobra.',
+    give:'Le doy',receive:'Me da',no_trades:'Sin intercambios posibles aún.\nMarca tus repetidas y pide a tus amigos que hagan lo mismo.',
+    no_members:'Ningún amigo se ha unido aún.',
+    reps_title:'Mis repetidas',reps_sub:'+ sube el contador · − baja (si llega a 0 desaparece)',
+    no_reps:'No tienes estampas repetidas aún.',extra:'extra',
+    invite_title:'Invitar amigos',invite_copy:'Comparte el link de la app',
+    invite_sub:'Cualquier persona que entre al link y cree su cuenta aparece automáticamente en tu grupo',
+    copy_btn:'Copiar link',how_title:'¿Cómo funciona?',
+    how_steps:'1. Comparte el link con tus amigos\n2. Ellos crean su cuenta\n3. Aparecen en tu pestaña Grupo automáticamente\n4. Puedes ver su colección y calcular intercambios en tiempo real',
+    copied:'Link copiado ✓',logout:'Salir',
+    hello:'Hola, ',stickers:' estampas',
+    give_to:'Le doy a',receives_from:'Me da',
+    no_possible:'Sin intercambios posibles aún.',
+  },
+  en:{
+    app_sub:'Sticker tracker · 998 stickers · real time',
+    welcome:'Welcome',welcome_sub:'Sign in to see your collection',
+    label_user:'Username',label_pass:'Password',label_name:'Your name',
+    label_confirm:'Confirm password',
+    login_btn:'Sign in',reg_btn:'Create account',
+    no_account:"Don't have an account? Sign up",
+    have_account:'Already have an account? Sign in',
+    create_title:'Create account',create_sub:'Join the swap group',
+    err_fields:'Fill all fields (password min. 4 characters)',
+    err_match:"Passwords don't match",err_exists:'Username already taken',
+    err_login:'Wrong username or password',
+    loading:'Loading your collection...',
+    tab_album:'My album',tab_reps:'Duplicates',tab_group:'Group',
+    tab_trades:'Swaps',tab_invite:'Invite',
+    stat_have:'Have',stat_missing:'Missing',stat_reps:'Duplicates',
+    progress:'Album progress',
+    filter_all:'All',filter_incomplete:'Incomplete',filter_complete:'Complete',
+    specials:'Special sections',teams:'Teams',
+    group_label:'Group',page_label:'p.',
+    legend_no:"Don't have",legend_have:'Have (1 tap)',legend_rep:'Duplicate (2+ taps)',
+    tip:'1 tap = have · 2nd tap = duplicate · more taps = more duplicates · × to remove',
+    mark_all:'✓ Mark all',unmark_all:'✗ Clear all',done:'Done',
+    members:'Group members',view_col:'View collection',view_trades:'View swaps',
+    trades_title:'Swap opportunities',
+    trades_sub:"Your duplicates someone needs, and what you're missing that someone has extra.",
+    give:'I give',receive:'I get',no_trades:"No swaps possible yet.\nMark your duplicates and ask your friends to do the same.",
+    no_members:'No friends have joined yet.',
+    reps_title:'My duplicates',reps_sub:'+ increase · − decrease (disappears at 0)',
+    no_reps:'No duplicate stickers yet.',extra:'extra',
+    invite_title:'Invite friends',invite_copy:'Share the app link',
+    invite_sub:'Anyone who opens the link and creates an account automatically joins your group',
+    copy_btn:'Copy link',how_title:'How does it work?',
+    how_steps:'1. Share the link with your friends\n2. They create an account\n3. They appear in your Group tab automatically\n4. You can see their collection and calculate swaps in real time',
+    copied:'Link copied ✓',logout:'Sign out',
+    hello:'Hi, ',stickers:' stickers',
+    give_to:'I give to',receives_from:'gets from me',
+    no_possible:'No swaps possible yet.',
+  }
+};
+
+let lang=localStorage.getItem('panini_lang')||'es';
+function T(key){return I18N[lang][key]||I18N['es'][key]||key;}
+
+function toggleLang(){
+  lang=lang==='es'?'en':'es';
+  localStorage.setItem('panini_lang',lang);
+  document.getElementById('lang-btn').textContent=lang==='es'?'🇲🇽':'🇺🇸';
+  applyLang();
+}
+
+function applyLang(){
+  // Auth screen
+  const lf=document.getElementById('login-form');
+  const rf=document.getElementById('register-form');
+  if(lf){
+    lf.querySelector('h1').textContent=T('welcome');
+    lf.querySelector('p.sub').textContent=T('welcome_sub');
+    lf.querySelectorAll('label')[0].textContent=T('label_user');
+    lf.querySelectorAll('label')[1].textContent=T('label_pass');
+    document.getElementById('login-btn').textContent=T('login_btn');
+    lf.querySelector('.btn-link').textContent=T('no_account');
+  }
+  if(rf){
+    rf.querySelector('h1').textContent=T('create_title');
+    rf.querySelector('p.sub').textContent=T('create_sub');
+    rf.querySelectorAll('label')[0].textContent=T('label_name');
+    rf.querySelectorAll('label')[1].textContent=T('label_user');
+    rf.querySelectorAll('label')[2].textContent=T('label_pass');
+    rf.querySelectorAll('label')[3].textContent=T('label_confirm');
+    document.getElementById('reg-btn').textContent=T('reg_btn');
+    rf.querySelector('.btn-link').textContent=T('have_account');
+  }
+  // Tabs
+  const tabs=document.querySelectorAll('.tab');
+  const tabKeys=['tab_album','tab_reps','tab_group','tab_trades','tab_invite'];
+  tabs.forEach((t,i)=>{if(tabKeys[i])t.textContent=T(tabKeys[i]);});
+  // Logout btn
+  const lb=document.getElementById('logout-btn');if(lb)lb.textContent=T('logout');
+  // Stats
+  const statLabels=document.querySelectorAll('.stat-label');
+  if(statLabels[0])statLabels[0].textContent=T('stat_have');
+  if(statLabels[1])statLabels[1].textContent=T('stat_missing');
+  if(statLabels[2])statLabels[2].textContent=T('stat_reps');
+  // Progress
+  const pt=document.querySelector('.progress-top span');if(pt)pt.textContent=T('progress');
+  // Filter buttons
+  const fbs=document.querySelectorAll('.filter-btn');
+  if(fbs[0])fbs[0].textContent=T('filter_all');
+  if(fbs[1])fbs[1].textContent=T('filter_incomplete');
+  if(fbs[2])fbs[2].textContent=T('filter_complete');
+  // Lang btn
+  document.getElementById('lang-btn').textContent=lang==='es'?'🇲🇽':'🇺🇸';
+  // Re-render dynamic content if visible
+  if(document.getElementById('tab-repetidas').style.display!=='none')renderRepetidas();
+  if(document.getElementById('tab-grupo').style.display!=='none')renderMembers();
+  if(document.getElementById('tab-intercambios').style.display!=='none')renderTrades();
+  renderCountryGrid();
+}
+
 // ── Events ───────────────────────────────────────────────────
 document.getElementById('country-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 document.getElementById('member-modal').addEventListener('click',function(e){if(e.target===this)closeMemberModal();});
@@ -798,7 +1047,23 @@ document.addEventListener('keydown',e=>{
   else if(document.getElementById('register-form').style.display!=='none')doRegister();
 });
 
-hideLoading();
+// ── Init: auto-login ─────────────────────────────────────────
+(async()=>{
+  applyLang();
+  const savedId=localStorage.getItem('panini_uid');
+  if(savedId){
+    setLoading(T('loading'));
+    const{data,error}=await sb.from('users').select('*').eq('id',savedId).maybeSingle();
+    if(data&&!error){
+      currentUser=data;
+      await loadAndShowMain();
+      return;
+    } else {
+      localStorage.removeItem('panini_uid');
+    }
+  }
+  hideLoading();
+})();
 </script>
 </body>
 </html>
