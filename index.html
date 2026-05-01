@@ -626,8 +626,13 @@ async function doLogin(){
   const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='...';
   try {
     const{data,error}=await sb.from('users').select('*').eq('username',username).eq('password',pass).maybeSingle();
-    if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;}
-    if(!data){errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;}
+    if(error){errEl.textContent='Error BD: '+error.message;errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;}
+    if(!data){
+      // Try finding just by username to debug
+      const{data:d2}=await sb.from('users').select('username,password').eq('username',username).maybeSingle();
+      errEl.textContent=d2?'Usuario existe pero contraseña incorrecta. Pass guardado: "'+d2.password+'"':'Usuario no encontrado: "'+username+'"';
+      errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;
+    }
     currentUser={id:data.id,username:data.username,name:data.name,photo_url:data.photo_url||null};
     localStorage.setItem('panini_uid',data.id);
     await loadAndShowMain();
