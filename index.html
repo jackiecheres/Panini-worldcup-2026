@@ -3,440 +3,299 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Panini FIFA World Cup 2026 — Tracker</title>
+<title>Panini WC 2026</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* ─── PALETTE ───────────────────────────────────────── */
-:root {
-  --purple:   #5B3FA6;
-  --green:    #4A9B3F;
-  --red:      #D42B2B;
-  --yellow:   #F5C500;
-  --blue:     #6BA3BE;
-  --purple-d: #3d2878;
-  --red-d:    #a81f1f;
-  --purple-l: #ede8f8;
-  --green-l:  #e8f5e5;
-  --red-l:    #fce8e8;
-  --yellow-l: #fdf8e0;
-  --bg:       #f3f0fb;
-  --card:     #ffffff;
-  --text:     #1a1624;
-  --text2:    #6b6580;
-  --border:   #ddd8f0;
-}
-
-/* ─── RESET ─────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
-.app{min-height:100vh}
-.screen{display:none}.screen.active{display:block}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f3f0fb;min-height:100vh;color:#1a1a1a}
 
-/* ─── AUTH BG ───────────────────────────────────────── */
-#screen-auth {
-  min-height:100vh;
-  background: var(--purple-d);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-/* Abstract curved blobs — album-inspired */
-#screen-auth::before {
-  content:'';
-  position:absolute;inset:0;
-  background:
-    radial-gradient(ellipse 70% 55% at 110% -10%, var(--red) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at -10% 110%, var(--red) 0%, transparent 60%),
-    radial-gradient(ellipse 55% 50% at 100% 75%, var(--green) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 45% at 15% 0%, var(--green) 0%, transparent 55%),
-    radial-gradient(ellipse 30% 25% at 98% 3%, var(--yellow) 0%, transparent 50%),
-    radial-gradient(ellipse 30% 25% at 2% 98%, var(--yellow) 0%, transparent 50%),
-    radial-gradient(ellipse 35% 30% at 0% 50%, var(--blue) 0%, transparent 50%);
-  z-index:0;
-}
-.auth-wrap {
-  position:relative;z-index:1;
-  display:flex;align-items:center;justify-content:center;
-  padding:24px;width:100%;
-}
-.auth-lang-btn{position:fixed;top:14px;right:14px;z-index:10;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);border-radius:20px;padding:6px 14px;cursor:pointer;font-size:13px;color:#fff;font-weight:700;backdrop-filter:blur(8px)}
-.auth-lang-btn:hover{background:rgba(255,255,255,.3)}
-.auth-card{background:rgba(255,255,255,.97);backdrop-filter:blur(20px);border-radius:22px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.5)}
-.auth-logo{text-align:center;margin-bottom:22px}
-.auth-logo-badge{display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,var(--purple),var(--red));color:#fff;padding:11px 22px;border-radius:12px;font-size:16px;font-weight:800}
-.auth-logo-ball{font-size:22px}
-.auth-logo-sub{font-size:12px;color:var(--text2);margin-top:8px}
-.auth-body{background:none;padding:0}
-
-/* ─── FORMS ─────────────────────────────────────────── */
-h1.title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:.2rem;letter-spacing:-.03em}
-p.sub{font-size:14px;color:var(--text2);margin-bottom:1.4rem}
-.form-group{margin-bottom:13px}
-.form-group label{display:block;font-size:11px;font-weight:700;color:var(--purple);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
-.form-group input{width:100%;padding:11px 14px;font-size:14px;border:1.5px solid var(--border);border-radius:10px;background:#fff;color:var(--text);transition:border-color .15s;outline:none}
-.form-group input:focus{border-color:var(--purple)}
-.pass-wrap{position:relative}
-.pass-wrap input{padding-right:42px}
-.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#aaa;font-size:16px;padding:0}
-.btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,var(--purple),var(--red));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;transition:opacity .15s}
-.btn-primary:hover{opacity:.9}
-.btn-primary:disabled{opacity:.45;cursor:not-allowed}
-.btn-link{background:none;border:none;color:var(--purple);font-size:13px;cursor:pointer;text-decoration:underline;margin-top:12px;display:block;text-align:center;font-weight:500}
-.btn-link-small{background:none;border:none;color:var(--text2);font-size:12px;cursor:pointer;text-decoration:underline;margin-top:6px;display:block;text-align:right;opacity:.7}
-.err{font-size:13px;color:var(--red);margin-top:6px;display:none;background:var(--red-l);padding:8px 12px;border-radius:8px}
-.success-msg{font-size:13px;color:var(--green);margin-top:6px;display:none;background:var(--green-l);padding:8px 12px;border-radius:8px}
-
-/* ─── LOADING ────────────────────────────────────────── */
-.loading-screen{position:fixed;inset:0;background:var(--purple-d);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
-.loading-screen::before{content:'';position:absolute;inset:0;
-  background:
-    radial-gradient(ellipse 60% 50% at 110% -10%, var(--red) 0%, transparent 60%),
-    radial-gradient(ellipse 55% 50% at 100% 75%, var(--green) 0%, transparent 55%),
-    radial-gradient(ellipse 30% 25% at 98% 3%, var(--yellow) 0%, transparent 50%);
-}
-.loading-screen.hidden{display:none}
-.spinner{position:relative;z-index:1;width:40px;height:40px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-bottom:14px}
+/* LOADING */
+#loading{position:fixed;inset:0;background:#4a2d7a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;color:#fff}
+#loading.hidden{display:none}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-bottom:12px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-screen p{position:relative;z-index:1;font-size:14px;color:rgba(255,255,255,.8);font-weight:500}
 
-/* ─── MAIN HEADER ───────────────────────────────────── */
-.main-header{background:linear-gradient(135deg,var(--purple-d) 0%,var(--purple) 60%,var(--red-d) 100%);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(91,63,166,.3)}
-.header-left h2{font-size:15px;font-weight:800;letter-spacing:-.02em}
-.header-left p{font-size:11px;opacity:.65;margin-top:1px}
-.user-pill{display:flex;align-items:center;gap:8px}
-.avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;border:2px solid rgba(255,255,255,.4);cursor:pointer;overflow:hidden;flex-shrink:0}
-.avatar:hover{border-color:#fff}
-.logout-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:11px;padding:5px 10px;border-radius:20px;cursor:pointer;font-weight:600}
-.logout-btn:hover{background:rgba(255,255,255,.25)}
-.sync-dot{width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;flex-shrink:0}
-.sync-dot.syncing{background:var(--yellow);animation:pulse .8s infinite}
-.sync-dot.error{background:var(--red)}
+/* AUTH */
+#screen-auth{display:none;min-height:100vh;background:#4a2d7a;align-items:center;justify-content:center;padding:20px}
+#screen-auth.active{display:flex}
+.auth-card{background:#fff;border-radius:20px;padding:30px 26px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.auth-logo{text-align:center;margin-bottom:20px}
+.auth-logo-badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#4a2d7a,#c8202e);color:#fff;padding:10px 20px;border-radius:12px;font-size:15px;font-weight:700}
+.auth-logo-sub{font-size:12px;color:#888;margin-top:6px}
+.form-title{font-size:20px;font-weight:800;margin-bottom:4px;color:#1a1a1a}
+.form-sub{font-size:13px;color:#888;margin-bottom:16px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:700;color:#4a2d7a;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+.field input{width:100%;padding:10px 12px;font-size:14px;border:1.5px solid #ddd;border-radius:10px;outline:none;transition:border-color .15s}
+.field input:focus{border-color:#4a2d7a}
+.pass-wrap{position:relative}
+.pass-wrap input{padding-right:40px}
+.eye-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:15px;color:#aaa}
+.btn-main{width:100%;padding:12px;background:linear-gradient(135deg,#4a2d7a,#c8202e);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px}
+.btn-main:disabled{opacity:.5;cursor:not-allowed}
+.btn-link{background:none;border:none;color:#4a2d7a;font-size:13px;cursor:pointer;text-decoration:underline;margin-top:12px;display:block;text-align:center}
+.err-msg{font-size:13px;color:#c8202e;background:#fdeaea;padding:8px 12px;border-radius:8px;margin-top:8px;display:none}
+
+/* MAIN */
+#screen-main{display:none}
+#screen-main.active{display:block}
+.header{background:linear-gradient(135deg,#3d2878,#4a2d7a,#a81f1f);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.header h2{font-size:15px;font-weight:800}
+.header p{font-size:11px;opacity:.65}
+.header-right{display:flex;align-items:center;gap:8px}
+.avatar{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;border:2px solid rgba(255,255,255,.4);cursor:pointer;overflow:hidden;flex-shrink:0}
+.btn-logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:11px;padding:5px 10px;border-radius:20px;cursor:pointer;font-weight:600}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#4caf50;flex-shrink:0}
+.sync-dot.syncing{background:#ffcc00;animation:pulse .8s infinite}
+.sync-dot.error{background:#f44336}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* ─── TABS ───────────────────────────────────────────── */
-.tabs{display:flex;border-bottom:2px solid var(--border);background:var(--card);position:sticky;top:62px;z-index:40;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #e2dff0;position:sticky;top:62px;z-index:40;overflow-x:auto}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex:1;min-width:58px;padding:11px 4px;font-size:12px;border:none;background:none;cursor:pointer;color:#aaa;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;font-weight:600;white-space:nowrap}
-.tab.active{color:var(--purple);border-bottom-color:var(--purple);font-weight:800}
+.tab{flex:1;min-width:60px;padding:11px 4px;font-size:12px;border:none;background:none;cursor:pointer;color:#aaa;border-bottom:3px solid transparent;margin-bottom:-2px;font-weight:600;white-space:nowrap}
+.tab.active{color:#4a2d7a;border-bottom-color:#4a2d7a;font-weight:800}
+
 .content{padding:16px;max-width:800px;margin:0 auto}
 
-/* ─── STATS ──────────────────────────────────────────── */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.stat-card{background:var(--card);border-radius:12px;padding:12px;text-align:center;border:1px solid var(--border)}
-.stat-card:nth-child(1){border-top:3px solid var(--purple)}
-.stat-card:nth-child(2){border-top:3px solid var(--red)}
-.stat-card:nth-child(3){border-top:3px solid var(--yellow)}
-.stat-num{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.04em}
-.stat-label{font-size:10px;color:var(--text2);margin-top:3px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-.progress-bar-wrap{background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:16px;border:1px solid var(--border)}
+.stat-card{background:#fff;border-radius:12px;padding:12px;text-align:center;border:1px solid #e2dff0}
+.stat-card:nth-child(1){border-top:3px solid #4a2d7a}
+.stat-card:nth-child(2){border-top:3px solid #c8202e}
+.stat-card:nth-child(3){border-top:3px solid #f0c000}
+.stat-num{font-size:24px;font-weight:800;color:#1a1a1a}
+.stat-label{font-size:10px;color:#888;margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+
+.progress-wrap{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:14px;border:1px solid #e2dff0}
 .progress-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px}
-.progress-top span:first-child{font-weight:700;color:var(--text)}
-.progress-top span:last-child{color:var(--text2);font-weight:500}
-.progress-track{height:10px;background:var(--purple-l);border-radius:5px;overflow:hidden}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--red));border-radius:5px;transition:width .4s ease}
-.section-label{font-size:10px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;opacity:.8}
+.progress-top span:first-child{font-weight:700}
+.progress-top span:last-child{color:#888}
+.progress-track{height:10px;background:#e2dff0;border-radius:5px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#4a2d7a,#c8202e);border-radius:5px;transition:width .4s}
 
-/* ─── FILTERS ────────────────────────────────────────── */
 .filter-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-.filter-btn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);font-size:12px;cursor:pointer;color:var(--text2);font-weight:500;transition:all .15s}
-.filter-btn.active{background:var(--purple);color:#fff;border-color:var(--purple)}
+.filter-btn{padding:6px 14px;border-radius:20px;border:1.5px solid #e2dff0;background:#fff;font-size:12px;cursor:pointer;color:#666;font-weight:500}
+.filter-btn.active{background:#4a2d7a;color:#fff;border-color:#4a2d7a}
 
-/* ─── COUNTRY GRID ───────────────────────────────────── */
-.country-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.country-card{border:1.5px solid var(--border);border-radius:12px;padding:11px 13px;cursor:pointer;background:var(--card);transition:all .15s}
-.country-card:hover{box-shadow:0 4px 14px rgba(91,63,166,.18);transform:translateY(-1px)}
-.country-card.complete{background:var(--green-l);border-color:var(--green)}
-.country-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
-.country-group-label{font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:500}
-.country-mini-progress{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:5px}
-.country-mini-fill{height:100%;border-radius:2px;transition:width .3s}
-.country-count{font-size:11px;color:var(--text2);font-weight:500}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.grid-header{grid-column:1/-1;font-size:11px;font-weight:800;color:#4a2d7a;text-transform:uppercase;letter-spacing:.08em;margin:8px 0 2px;opacity:.7}
+.grid-divider{grid-column:1/-1;height:1px;background:#e2dff0;margin:6px 0}
+.team-card{border:1.5px solid #e2dff0;border-radius:12px;padding:11px 13px;cursor:pointer;background:#fff;transition:all .15s}
+.team-card:hover{box-shadow:0 3px 12px rgba(74,45,122,.15);transform:translateY(-1px)}
+.team-card.complete{background:#eaf5ea;border-color:#4a9b3f}
+.team-name{font-size:13px;font-weight:700;margin-bottom:2px}
+.team-group{font-size:10px;color:#888;margin-bottom:6px}
+.mini-bar{height:4px;background:#e2dff0;border-radius:2px;overflow:hidden;margin-bottom:4px}
+.mini-fill{height:100%;border-radius:2px;transition:width .3s}
+.team-count{font-size:11px;color:#888}
 
-/* ─── MODAL ──────────────────────────────────────────── */
+/* MODAL */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(30,10,60,.6);z-index:100;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
 .modal-bg.open{display:flex}
-.modal{background:var(--card);border-radius:20px;width:100%;max-width:560px;overflow:hidden;display:flex;flex-direction:column;max-height:90vh}
-.modal-head{padding:14px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;background:linear-gradient(135deg,var(--purple-d),var(--purple),var(--red-d))}
+.modal{background:#fff;border-radius:20px;width:100%;max-width:540px;overflow:hidden;display:flex;flex-direction:column;max-height:90vh}
+.modal-head{padding:14px 18px;background:linear-gradient(135deg,#3d2878,#c8202e);display:flex;justify-content:space-between;align-items:center}
 .modal-head h3{font-size:16px;font-weight:800;color:#fff}
-.close-btn{background:rgba(255,255,255,.2);border:none;font-size:18px;cursor:pointer;color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center}
-.close-btn:hover{background:rgba(255,255,255,.35)}
-.modal-body{padding:16px 18px;overflow-y:auto;flex:1}
-
-/* ─── STICKERS ───────────────────────────────────────── */
-.sticker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px;margin-bottom:14px}
-.sticker-btn{border:1.5px solid var(--border);border-radius:9px;padding:7px 3px;text-align:center;cursor:pointer;background:var(--card);color:#ccc;user-select:none;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .1s;-webkit-tap-highlight-color:transparent;position:relative}
+.modal-close{background:rgba(255,255,255,.2);border:none;font-size:18px;cursor:pointer;color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:16px;overflow-y:auto;flex:1}
+.legend{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:5px;font-size:12px;color:#666}
+.leg-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.sticker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px;margin-bottom:14px}
+.sticker-btn{border:1.5px solid #e2dff0;border-radius:9px;padding:6px 2px;text-align:center;cursor:pointer;background:#fff;color:#ccc;user-select:none;min-height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .1s;position:relative;-webkit-tap-highlight-color:transparent}
 .sticker-btn:active{transform:scale(.92)}
-.sticker-btn.have{background:var(--green-l);border-color:var(--green);color:#2a6625}
-.sticker-btn.repeated{background:var(--yellow-l);border-color:var(--yellow);color:#7a5c00}
-.sticker-num{font-size:12px;font-weight:800}
-.sticker-tag{font-size:9px;opacity:.85;font-weight:600}
-.del-btn{position:absolute;top:2px;right:3px;font-size:11px;color:var(--red);font-weight:700;cursor:pointer;opacity:.6}
-.del-btn:hover{opacity:1}
-.legend{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
-.leg-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)}
-.leg-dot{width:13px;height:13px;border-radius:3px;flex-shrink:0}
+.sticker-btn.have{background:#eaf5ea;border-color:#4a9b3f;color:#1a5c1a}
+.sticker-btn.repeated{background:#fdf8e0;border-color:#f0c000;color:#7a5c00}
+.s-num{font-size:12px;font-weight:800}
+.s-tag{font-size:9px;opacity:.85;font-weight:600}
+.del-x{position:absolute;top:2px;right:3px;font-size:11px;color:#c8202e;font-weight:700;cursor:pointer;opacity:.6}
+.del-x:hover{opacity:1}
 .btn-row{display:flex;gap:7px;margin-top:4px}
-.btn-sm{flex:1;padding:10px;border-radius:10px;font-size:12px;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);font-weight:700;transition:all .15s}
-.btn-sm:hover{background:var(--bg)}
-.btn-sm.green{background:var(--purple);color:#fff;border-color:var(--purple)}
-.btn-sm.green:hover{opacity:.9}
+.btn-sm{flex:1;padding:10px;border-radius:10px;font-size:12px;cursor:pointer;border:1.5px solid #e2dff0;background:#fff;color:#666;font-weight:700}
+.btn-sm.primary{background:#4a2d7a;color:#fff;border-color:#4a2d7a}
 
-/* ─── MEMBERS ────────────────────────────────────────── */
-.member-card{border:1.5px solid var(--border);border-radius:14px;padding:13px 15px;margin-bottom:8px;background:var(--card)}
-.member-top{display:flex;align-items:center;gap:11px;margin-bottom:8px}
-.member-avatar{width:42px;height:42px;border-radius:50%;background:var(--purple-l);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--purple);flex-shrink:0;border:2px solid var(--purple);overflow:hidden}
-.member-info h4{font-size:14px;font-weight:700;color:var(--text)}
-.member-info p{font-size:12px;color:#aaa;margin-top:2px}
-.member-progress{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:8px}
-.member-progress-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--red));border-radius:3px}
+/* MEMBERS */
+.member-card{border:1.5px solid #e2dff0;border-radius:14px;padding:13px;margin-bottom:8px;background:#fff}
+.member-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.member-av{width:40px;height:40px;border-radius:50%;background:#ede8f8;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#4a2d7a;flex-shrink:0;border:2px solid #4a2d7a;overflow:hidden}
+.member-info h4{font-size:14px;font-weight:700}
+.member-info p{font-size:12px;color:#aaa;margin-top:1px}
+.member-bar{height:5px;background:#e2dff0;border-radius:3px;overflow:hidden;margin-bottom:8px}
+.member-bar-fill{height:100%;background:linear-gradient(90deg,#4a2d7a,#c8202e);border-radius:3px}
 .member-actions{display:flex;gap:6px;flex-wrap:wrap}
-.tag-btn{font-size:12px;padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;color:var(--text2);font-weight:600;transition:all .15s}
-.tag-btn:hover{border-color:var(--purple);color:var(--purple)}
+.tag-btn{font-size:12px;padding:6px 12px;border-radius:20px;border:1.5px solid #e2dff0;background:#f3f0fb;cursor:pointer;color:#666;font-weight:600}
+.tag-btn:hover{border-color:#4a2d7a;color:#4a2d7a}
 
-/* ─── TRADES ─────────────────────────────────────────── */
-.trade-card{border:1.5px solid var(--border);border-radius:14px;padding:13px 15px;margin-bottom:8px;background:var(--card)}
-.trade-header{font-size:14px;font-weight:800;margin-bottom:8px;color:var(--text)}
-.trade-tag{display:inline-block;background:var(--green-l);color:var(--green);font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px;margin:2px;border:1px solid rgba(74,155,63,.25)}
-.trade-tag.need{background:var(--yellow-l);color:#7a5c00;border-color:rgba(245,197,0,.3)}
-.trade-section-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--purple);opacity:.75;margin-bottom:5px;margin-top:8px}
+/* TRADES */
+.trade-card{border:1.5px solid #e2dff0;border-radius:14px;padding:13px;margin-bottom:8px;background:#fff}
+.trade-h{font-size:14px;font-weight:800;margin-bottom:8px}
+.trade-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#4a2d7a;opacity:.7;margin-bottom:5px;margin-top:8px}
+.tag{display:inline-block;background:#eaf5ea;color:#4a9b3f;font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px;margin:2px;border:1px solid rgba(74,155,63,.2)}
+.tag.need{background:#fdf8e0;color:#7a5c00;border-color:rgba(240,192,0,.3)}
 
-/* ─── INVITE ─────────────────────────────────────────── */
-.group-code-box{background:linear-gradient(135deg,var(--purple-l),var(--red-l));border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px}
-.group-code-label{font-size:13px;color:var(--text2);margin-top:6px}
+/* REPS */
+.rep-block{background:#fff;border-radius:12px;border:1.5px solid #e2dff0;overflow:hidden;margin-bottom:12px}
+.rep-head{padding:8px 14px;font-size:13px;font-weight:700;color:#fff}
+.rep-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #f5f5f0;font-size:13px}
+.rep-cnt{font-size:12px;color:#7a5c00;background:#fdf8e0;padding:3px 10px;border-radius:20px;font-weight:700}
+.rep-btns{display:flex;gap:4px}
+.rep-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid;background:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.rep-btn.plus{border-color:#4a2d7a;color:#4a2d7a}
+.rep-btn.minus{border-color:#c8202e;color:#c8202e}
 
-/* ─── TOAST ──────────────────────────────────────────── */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--purple),var(--red));color:#fff;padding:11px 22px;border-radius:30px;font-size:13px;font-weight:700;display:none;z-index:300;white-space:nowrap;box-shadow:0 6px 24px rgba(91,63,166,.5)}
+/* INVITE */
+.invite-box{background:linear-gradient(135deg,#ede8f8,#fdeaea);border:1.5px solid #e2dff0;border-radius:14px;padding:20px;text-align:center;margin-bottom:16px}
+.invite-box h3{font-size:15px;font-weight:700;color:#4a2d7a;margin-bottom:6px}
+.invite-sub{font-size:13px;color:#666;margin-bottom:14px;line-height:1.5}
+.btn-copy{padding:10px 24px;background:#4a2d7a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#4a2d7a;color:#fff;padding:11px 22px;border-radius:30px;font-size:13px;font-weight:700;display:none;z-index:300;white-space:nowrap;box-shadow:0 6px 24px rgba(74,45,122,.5)}
 .toast.show{display:block}
-.empty-state{text-align:center;padding:2.5rem 1rem;color:#bbb;font-size:14px;line-height:1.6}
-@media(max-width:480px){.country-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}.sticker-grid{grid-template-columns:repeat(auto-fill,minmax(50px,1fr))}}
+.empty{text-align:center;padding:2.5rem 1rem;color:#bbb;font-size:14px;line-height:1.6}
+@media(max-width:480px){.grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}.sticker-grid{grid-template-columns:repeat(auto-fill,minmax(50px,1fr))}}
 </style>
 </head>
 <body>
 
-<div class="loading-screen" id="loading-screen">
+<div id="loading">
   <div class="spinner"></div>
   <p id="loading-msg">Conectando...</p>
 </div>
 
-<div class="app" id="app" style="display:none">
+<div id="screen-auth">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-badge">⚽ Panini WC 2026</div>
+      <div class="auth-logo-sub">Tracker grupal · 998 estampas</div>
+    </div>
 
-<div class="screen active" id="screen-auth">
-  <button class="auth-lang-btn" id="auth-lang-btn" onclick="toggleLang()">🇲🇽 ES</button>
-  <div class="auth-wrap">
-    <div class="auth-card">
-      <div class="auth-logo">
-        <div class="auth-logo-badge"><span class="auth-logo-ball">⚽</span> Panini WC 2026</div>
-        <div class="auth-logo-sub" id="auth-hero-sub">Tracker grupal · 998 estampas · en tiempo real</div>
+    <div id="form-login">
+      <div class="form-title">Bienvenido</div>
+      <div class="form-sub">Inicia sesión para ver tu colección</div>
+      <div class="field"><label>Usuario</label><input id="login-user" placeholder="ej. stephan" autocomplete="username"></div>
+      <div class="field"><label>Contraseña</label>
+        <div class="pass-wrap"><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password">
+        <button class="eye-btn" type="button" onclick="togglePass('login-pass',this)" tabindex="-1">👁</button></div>
       </div>
-      <div class="auth-body">
-        <div id="login-form">
-          <h1 class="title" id="lbl-welcome">Bienvenido</h1>
-          <p class="sub" id="lbl-welcome-sub">Inicia sesión para ver tu colección</p>
-          <div class="form-group"><label id="lbl-login-user">Usuario</label><input id="login-user" placeholder="ej. stephan" autocomplete="username"></div>
-          <div class="form-group"><label id="lbl-login-pass">Contraseña</label>
-            <div class="pass-wrap"><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password">
-            <button class="eye-btn" type="button" onclick="togglePass('login-pass',this)" tabindex="-1">👁</button></div>
-          </div>
-          <button class="btn-link-small" onclick="showReset()" id="lbl-forgot" style="display:none">¿Olvidaste tu contraseña?</button>
-          <p class="err" id="login-err">Usuario o contraseña incorrectos</p>
-          <button class="btn-primary" id="login-btn" onclick="doLogin()">Entrar</button>
-          <button class="btn-link" onclick="showRegister()" id="lbl-no-account">¿No tienes cuenta? Regístrate</button>
-        </div>
+      <div id="login-err" class="err-msg">Usuario o contraseña incorrectos</div>
+      <button class="btn-main" id="login-btn" onclick="doLogin()">Entrar</button>
+      <button class="btn-link" onclick="showForm('register')">¿No tienes cuenta? Regístrate</button>
+    </div>
 
-        <div id="register-form" style="display:none">
-          <h1 class="title" id="lbl-create-title">Crear cuenta</h1>
-          <p class="sub" id="lbl-create-sub">Únete al grupo de intercambio</p>
-          <div class="form-group"><label id="lbl-reg-name">Tu nombre</label><input id="reg-name" placeholder="ej. Stephan"></div>
-          <div class="form-group"><label id="lbl-reg-user">Usuario</label><input id="reg-user" placeholder="ej. stephan (sin espacios)"></div>
-          <div class="form-group"><label id="lbl-reg-pass">Contraseña</label>
-            <div class="pass-wrap"><input id="reg-pass" type="password" placeholder="Mínimo 4 caracteres">
-            <button class="eye-btn" type="button" onclick="togglePass('reg-pass',this)" tabindex="-1">👁</button></div>
-          </div>
-          <div class="form-group"><label id="lbl-reg-pass2">Confirmar contraseña</label>
-            <div class="pass-wrap"><input id="reg-pass2" type="password" placeholder="Repite tu contraseña">
-            <button class="eye-btn" type="button" onclick="togglePass('reg-pass2',this)" tabindex="-1">👁</button></div>
-          </div>
-          <p class="err" id="reg-err"></p>
-          <button class="btn-primary" id="reg-btn" onclick="doRegister()">Crear cuenta</button>
-          <button class="btn-link" onclick="showLogin()" id="lbl-have-account">¿Ya tienes cuenta? Inicia sesión</button>
-        </div>
-
-        <div id="reset-form" style="display:none">
-          <h1 class="title" id="lbl-reset-title">Restablecer contraseña</h1>
-          <p class="sub" id="lbl-reset-sub">Ingresa tu usuario y tu nueva contraseña</p>
-          <div class="form-group"><label id="lbl-reset-user">Usuario</label><input id="reset-user" placeholder="ej. stephan" autocomplete="username"></div>
-          <div class="form-group"><label id="lbl-reset-pass">Nueva contraseña</label>
-            <div class="pass-wrap"><input id="reset-pass" type="password" placeholder="Mínimo 4 caracteres">
-            <button class="eye-btn" type="button" onclick="togglePass('reset-pass',this)" tabindex="-1">👁</button></div>
-          </div>
-          <div class="form-group"><label id="lbl-reset-pass2">Confirmar contraseña</label>
-            <div class="pass-wrap"><input id="reset-pass2" type="password" placeholder="Repite tu nueva contraseña">
-            <button class="eye-btn" type="button" onclick="togglePass('reset-pass2',this)" tabindex="-1">👁</button></div>
-          </div>
-          <p class="err" id="reset-err"></p>
-          <p class="success-msg" id="reset-ok"></p>
-          <button class="btn-primary" id="reset-btn" onclick="doReset()">Cambiar contraseña</button>
-          <button class="btn-link" onclick="showLogin()" id="lbl-back-login">← Volver al inicio de sesión</button>
-        </div>
+    <div id="form-register" style="display:none">
+      <div class="form-title">Crear cuenta</div>
+      <div class="form-sub">Únete al grupo de intercambio</div>
+      <div class="field"><label>Tu nombre</label><input id="reg-name" placeholder="ej. Stephan"></div>
+      <div class="field"><label>Usuario</label><input id="reg-user" placeholder="ej. stephan"></div>
+      <div class="field"><label>Contraseña</label>
+        <div class="pass-wrap"><input id="reg-pass" type="password" placeholder="Mínimo 4 caracteres">
+        <button class="eye-btn" type="button" onclick="togglePass('reg-pass',this)" tabindex="-1">👁</button></div>
       </div>
+      <div class="field"><label>Confirmar contraseña</label>
+        <div class="pass-wrap"><input id="reg-pass2" type="password" placeholder="Repite tu contraseña">
+        <button class="eye-btn" type="button" onclick="togglePass('reg-pass2',this)" tabindex="-1">👁</button></div>
+      </div>
+      <div id="reg-err" class="err-msg"></div>
+      <button class="btn-main" id="reg-btn" onclick="doRegister()">Crear cuenta</button>
+      <button class="btn-link" onclick="showForm('login')">¿Ya tienes cuenta? Inicia sesión</button>
     </div>
   </div>
 </div>
 
-<div class="screen" id="screen-main">
-  <div class="main-header">
-    <div class="header-left">
+<div id="screen-main">
+  <div class="header">
+    <div>
       <p>Panini FIFA World Cup 2026</p>
       <h2 id="header-greeting">Mi Colección</h2>
     </div>
-    <div class="user-pill">
-      <span class="sync-dot" id="sync-dot" title="Sincronizado"></span>
-      <button id="lang-btn" onclick="toggleLang()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:0;line-height:1" title="Cambiar idioma">🇲🇽</button>
-      <div class="avatar" id="header-avatar" onclick="openProfile()" style="cursor:pointer" title="Mi perfil">S</div>
-      <button class="logout-btn" id="logout-btn" onclick="doLogout()">Salir</button>
+    <div class="header-right">
+      <span class="sync-dot" id="sync-dot"></span>
+      <div class="avatar" id="header-av" onclick="alert('Perfil próximamente')">S</div>
+      <button class="btn-logout" onclick="doLogout()">Salir</button>
     </div>
   </div>
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('mi-album')">Mi álbum</button>
+    <button class="tab active" onclick="switchTab('album')">Mi álbum</button>
     <button class="tab" onclick="switchTab('repetidas')">Repetidas</button>
     <button class="tab" onclick="switchTab('grupo')">Grupo</button>
-    <button class="tab" onclick="switchTab('intercambios')">Cambios</button>
-    <button class="tab" onclick="switchTab('config')">Invitar</button>
+    <button class="tab" onclick="switchTab('cambios')">Cambios</button>
+    <button class="tab" onclick="switchTab('invitar')">Invitar</button>
   </div>
 
-  <div class="tab-content" id="tab-mi-album" style="display:block">
-    <div class="content">
-      <div class="stats-row">
-        <div class="stat-card"><div class="stat-num" id="stat-tengo">0</div><div class="stat-label">Tengo</div></div>
-        <div class="stat-card"><div class="stat-num" id="stat-faltan">998</div><div class="stat-label">Faltan</div></div>
-        <div class="stat-card"><div class="stat-num" id="stat-repetidas">0</div><div class="stat-label">Repetidas</div></div>
-      </div>
-      <div class="progress-bar-wrap">
-        <div class="progress-top"><span>Progreso del álbum</span><span id="stat-pct">0 / 998</span></div>
-        <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-      </div>
-      <div class="filter-row">
-        <button class="filter-btn active" onclick="filterCountry('todos',this)">Todos</button>
-        <button class="filter-btn" onclick="filterCountry('incompleto',this)">Incompletos</button>
-        <button class="filter-btn" onclick="filterCountry('completo',this)">Completos</button>
-      </div>
-      <div class="country-grid" id="country-grid"></div>
+  <div id="tab-album" class="content">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="st-tengo">0</div><div class="stat-label">Tengo</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-faltan">998</div><div class="stat-label">Faltan</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-reps">0</div><div class="stat-label">Repetidas</div></div>
     </div>
-  </div>
-
-  <div class="tab-content" id="tab-grupo" style="display:none">
-    <div class="content">
-      <div class="section-label" id="lbl-members" style="margin-bottom:14px">Miembros del grupo</div>
-      <div id="members-list"></div>
+    <div class="progress-wrap">
+      <div class="progress-top"><span>Progreso del álbum</span><span id="st-pct">0 / 998</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     </div>
-  </div>
-
-  <div class="tab-content" id="tab-intercambios" style="display:none">
-    <div class="content">
-      <div class="section-label" id="lbl-trades-title" style="margin-bottom:6px">Oportunidades de intercambio</div>
-      <p id="lbl-trades-sub" style="font-size:13px;color:#999;margin-bottom:18px;line-height:1.5">Tus repetidas que alguien necesita, y lo que te falta que alguien tiene de sobra.</p>
-      <div id="trades-list"></div>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setFilter('todos',this)">Todos</button>
+      <button class="filter-btn" onclick="setFilter('incompleto',this)">Incompletos</button>
+      <button class="filter-btn" onclick="setFilter('completo',this)">Completos</button>
     </div>
+    <div class="grid" id="team-grid"></div>
   </div>
 
-  <div class="tab-content" id="tab-repetidas" style="display:none">
-    <div class="content">
-      <div class="section-label" id="lbl-reps-title" style="margin-bottom:4px">Mis repetidas</div>
-      <p id="lbl-reps-sub" style="font-size:13px;color:#999;margin-bottom:16px;line-height:1.5">+ sube el contador · − baja (si llega a 0 desaparece)</p>
-      <div id="repetidas-list"></div>
+  <div id="tab-repetidas" class="content" style="display:none">
+    <div id="reps-list"></div>
+  </div>
+
+  <div id="tab-grupo" class="content" style="display:none">
+    <div id="members-list"></div>
+  </div>
+
+  <div id="tab-cambios" class="content" style="display:none">
+    <p style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.5">Tus repetidas que alguien necesita, y lo que te falta que alguien tiene de sobra.</p>
+    <div id="trades-list"></div>
+  </div>
+
+  <div id="tab-invitar" class="content" style="display:none">
+    <div class="invite-box">
+      <h3>🔗 Invita a tus amigos</h3>
+      <div class="invite-sub">Comparte el link de la app. Cualquier persona que cree una cuenta aparece en tu grupo automáticamente.</div>
+      <button class="btn-copy" onclick="copyLink()">Copiar link</button>
     </div>
-  </div>
-
-  <div class="tab-content" id="tab-config" style="display:none">
-    <div class="content">
-      <div class="section-label" id="lbl-invite-title" style="margin-bottom:14px">Invitar amigos</div>
-      <div class="group-code-box">
-        <div style="font-size:32px;margin-bottom:8px">🔗</div>
-        <div id="lbl-invite-copy" style="font-size:15px;font-weight:700;color:#1a4d2e;margin-bottom:6px">Comparte el link de la app</div>
-        <div id="lbl-invite-sub" class="group-code-label">Cualquier persona que entre al link y cree su cuenta aparece automáticamente en tu grupo</div>
-        <button onclick="copyLink()" id="lbl-copy-btn" style="margin-top:14px;padding:10px 24px;background:#1a4d2e;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">Copiar link</button>
-      </div>
-      <div style="background:#fff;border-radius:12px;padding:14px 16px;border:1.5px solid #ebebeb">
-        <div id="lbl-how-title" style="font-size:13px;font-weight:700;color:#111;margin-bottom:8px">¿Cómo funciona?</div>
-        <div id="lbl-how-steps" style="font-size:13px;color:#888;line-height:1.8">
-          1. Comparte el link con tus amigos<br>
-          2. Ellos crean su cuenta<br>
-          3. Aparecen en tu pestaña <strong style="color:#555">Grupo</strong> automáticamente<br>
-          4. Puedes ver su colección y calcular intercambios en tiempo real
-        </div>
-      </div>
+    <div style="background:#fff;border-radius:12px;padding:14px;border:1.5px solid #e2dff0;font-size:13px;color:#888;line-height:1.8">
+      1. Comparte el link con tus amigos<br>
+      2. Ellos crean su cuenta<br>
+      3. Aparecen en tu pestaña <strong style="color:#333">Grupo</strong><br>
+      4. Calculan intercambios automáticamente
     </div>
   </div>
 </div>
-</div>
 
-<!-- PROFILE MODAL -->
-<div class="modal-bg" id="profile-modal">
+<!-- TEAM MODAL -->
+<div class="modal-bg" id="team-modal">
   <div class="modal">
     <div class="modal-head">
-      <h3 id="lbl-profile-title">Mi perfil</h3>
-      <button class="close-btn" onclick="closeProfile()">×</button>
-    </div>
-    <div class="modal-body">
-      <div style="text-align:center;margin-bottom:20px">
-        <div style="position:relative;display:inline-block">
-          <div id="profile-avatar-big" style="width:80px;height:80px;border-radius:50%;background:#e8f5e0;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#1a4d2e;border:3px solid #c8e8cf;margin:0 auto;overflow:hidden;cursor:pointer" onclick="document.getElementById('photo-input').click()"></div>
-          <div style="position:absolute;bottom:0;right:0;background:#1a4d2e;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer" onclick="document.getElementById('photo-input').click()">✏️</div>
-        </div>
-        <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
-        <p id="lbl-photo-hint" style="font-size:12px;color:#aaa;margin-top:8px">Toca para cambiar foto</p>
-      </div>
-      <div class="form-group">
-        <label id="lbl-profile-name">Tu nombre</label>
-        <input id="profile-name-input" type="text" placeholder="Tu nombre">
-      </div>
-      <div class="form-group">
-        <label id="lbl-profile-user">Usuario</label>
-        <input id="profile-user-input" type="text" disabled style="background:#f5f5f0;color:#aaa">
-      </div>
-      <div class="form-group">
-        <label id="lbl-profile-newpass">Nueva contraseña</label>
-        <div class="pass-wrap">
-          <input id="profile-pass-input" type="password" placeholder="Dejar vacío para no cambiar">
-          <button class="eye-btn" type="button" onclick="togglePass('profile-pass-input',this)" tabindex="-1">👁</button>
-        </div>
-      </div>
-      <p class="err" id="profile-err"></p>
-      <button class="btn-primary" id="lbl-save-btn" onclick="saveProfile()">Guardar cambios</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-bg" id="country-modal">
-  <div class="modal">
-    <div class="modal-head">
-      <h3 id="modal-country-name"></h3>
-      <button class="close-btn" onclick="closeModal()">×</button>
+      <h3 id="modal-title"></h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
       <div class="legend">
-        <div class="leg-item"><div class="leg-dot" style="background:#fff;border:1.5px solid #ddd"></div>No tengo</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#f0faf2;border:1.5px solid #3a9d5a"></div>Tengo (1 tap)</div>
-        <div class="leg-item"><div class="leg-dot" style="background:#fffbea;border:1.5px solid #d4a017"></div>Repetida (2+ taps)</div>
+        <div class="leg"><div class="leg-dot" style="background:#fff;border:1.5px solid #ddd"></div>No tengo</div>
+        <div class="leg"><div class="leg-dot" style="background:#eaf5ea;border:1.5px solid #4a9b3f"></div>Tengo (1 tap)</div>
+        <div class="leg"><div class="leg-dot" style="background:#fdf8e0;border:1.5px solid #f0c000"></div>Repetida (2+ taps)</div>
       </div>
-      <p style="font-size:12px;color:#bbb;margin-bottom:12px">1 tap = tengo · 2° tap = repetida · más taps = más repetidas · × para borrar</p>
+      <p style="font-size:12px;color:#bbb;margin-bottom:12px">× para quitar</p>
       <div class="sticker-grid" id="sticker-grid"></div>
       <div class="btn-row">
         <button class="btn-sm" onclick="markAll('have')">✓ Marcar todas</button>
         <button class="btn-sm" onclick="markAll('none')">✗ Quitar todas</button>
-        <button class="btn-sm green" onclick="closeModal()">Listo</button>
+        <button class="btn-sm primary" onclick="closeModal()">Listo</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- MEMBER MODAL -->
 <div class="modal-bg" id="member-modal">
   <div class="modal">
     <div class="modal-head">
       <h3 id="member-modal-title"></h3>
-      <button class="close-btn" onclick="closeMemberModal()">×</button>
+      <button class="modal-close" onclick="document.getElementById('member-modal').classList.remove('open')">×</button>
     </div>
     <div class="modal-body" id="member-modal-body"></div>
   </div>
@@ -445,154 +304,64 @@ p.sub{font-size:14px;color:var(--text2);margin-bottom:1.4rem}
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPA_URL='https://zsghbqyxtdxvkpbrxdcv.supabase.co';
-const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZ2hicXl4dGR4dmtwYnJ4ZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTI0ODksImV4cCI6MjA5MzIyODQ4OX0.zgvlxhVGC5HWPJxmhVrrmN-PtUErDabGtK66jKyeuMs';
-const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+// ── SUPABASE ──────────────────────────────────────────────────
+const sb=supabase.createClient(
+  'https://zsghbqyxtdxvkpbrxdcv.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzZ2hicXl4dGR4dmtwYnJ4ZGN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTI0ODksImV4cCI6MjA5MzIyODQ4OX0.zgvlxhVGC5HWPJxmhVrrmN-PtUErDabGtK66jKyeuMs'
+);
 
-// Colores por grupo exactos del álbum
-const GROUP_COLORS={
-  A:'#4a7c3f', B:'#c0392b', C:'#d4ac0d', D:'#2471a3',
-  E:'#c0392b', F:'#1a5276', G:'#aab7b8', H:'#1e8449',
-  I:'#6c3483', J:'#f0a500', K:'#c0392b', L:'#7b241c'
-};
-
+// ── DATA ──────────────────────────────────────────────────────
+const GRP_COLORS={A:'#4a7c3f',B:'#c0392b',C:'#d4ac0d',D:'#2471a3',E:'#c0392b',F:'#1a5276',G:'#888',H:'#1e8449',I:'#6c3483',J:'#e67e22',K:'#c0392b',L:'#7b241c'};
 const TEAMS=[
-  // Grupo A - verde
-  {name:"México",        group:"A", code:"MEX", flag:"🇲🇽", page:8},
-  {name:"Sudáfrica",     group:"A", code:"RSA", flag:"🇿🇦", page:10},
-  {name:"Korea Republic",group:"A", code:"KOR", flag:"🇰🇷", page:12},
-  {name:"Czechia",       group:"A", code:"CZE", flag:"🇨🇿", page:14},
-  // Grupo B - rojo
-  {name:"Canadá",        group:"B", code:"CAN", flag:"🇨🇦", page:16},
-  {name:"Bosnia-Herz.",  group:"B", code:"BIH", flag:"🇧🇦", page:18},
-  {name:"Qatar",         group:"B", code:"QAT", flag:"🇶🇦", page:20},
-  {name:"Suiza",         group:"B", code:"SUI", flag:"🇨🇭", page:22},
-  // Grupo C - amarillo
-  {name:"Brasil",        group:"C", code:"BRA", flag:"🇧🇷", page:24},
-  {name:"Marruecos",     group:"C", code:"MAR", flag:"🇲🇦", page:26},
-  {name:"Haití",         group:"C", code:"HAI", flag:"🇭🇹", page:28},
-  {name:"Escocia",       group:"C", code:"SCO", flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿", page:30},
-  // Grupo D - azul
-  {name:"EUA",           group:"D", code:"USA", flag:"🇺🇸", page:32},
-  {name:"Paraguay",      group:"D", code:"PAR", flag:"🇵🇾", page:34},
-  {name:"Australia",     group:"D", code:"AUS", flag:"🇦🇺", page:36},
-  {name:"Türkiye",       group:"D", code:"TUR", flag:"🇹🇷", page:38},
-  // Grupo E - rojo
-  {name:"Alemania",      group:"E", code:"GER", flag:"🇩🇪", page:40},
-  {name:"Curaçao",       group:"E", code:"CUW", flag:"🇨🇼", page:42},
-  {name:"Côte d'Ivoire", group:"E", code:"CIV", flag:"🇨🇮", page:44},
-  {name:"Ecuador",       group:"E", code:"ECU", flag:"🇪🇨", page:46},
-  // Grupo F - azul oscuro
-  {name:"Países Bajos",  group:"F", code:"NED", flag:"🇳🇱", page:48},
-  {name:"Japón",         group:"F", code:"JPN", flag:"🇯🇵", page:50},
-  {name:"Suecia",        group:"F", code:"SWE", flag:"🇸🇪", page:52},
-  {name:"Túnez",         group:"F", code:"TUN", flag:"🇹🇳", page:54},
-  // Grupo G - gris/lila
-  {name:"Bélgica",       group:"G", code:"BEL", flag:"🇧🇪", page:58},
-  {name:"Egipto",        group:"G", code:"EGY", flag:"🇪🇬", page:60},
-  {name:"IR Irán",       group:"G", code:"IRN", flag:"🇮🇷", page:62},
-  {name:"Nueva Zelanda", group:"G", code:"NZL", flag:"🇳🇿", page:64},
-  // Grupo H - verde
-  {name:"España",        group:"H", code:"ESP", flag:"🇪🇸", page:66},
-  {name:"Cabo Verde",    group:"H", code:"CPV", flag:"🇨🇻", page:68},
-  {name:"Arabia Saudita",group:"H", code:"KSA", flag:"🇸🇦", page:70},
-  {name:"Uruguay",       group:"H", code:"URU", flag:"🇺🇾", page:72},
-  // Grupo I - morado
-  {name:"Francia",       group:"I", code:"FRA", flag:"🇫🇷", page:74},
-  {name:"Senegal",       group:"I", code:"SEN", flag:"🇸🇳", page:76},
-  {name:"Irak",          group:"I", code:"IRQ", flag:"🇮🇶", page:78},
-  {name:"Noruega",       group:"I", code:"NOR", flag:"🇳🇴", page:80},
-  // Grupo J - naranja/rosa
-  {name:"Argentina",     group:"J", code:"ARG", flag:"🇦🇷", page:82},
-  {name:"Argelia",       group:"J", code:"ALG", flag:"🇩🇿", page:84},
-  {name:"Austria",       group:"J", code:"AUT", flag:"🇦🇹", page:86},
-  {name:"Jordania",      group:"J", code:"JOR", flag:"🇯🇴", page:88},
-  // Grupo K - rojo
-  {name:"Portugal",      group:"K", code:"POR", flag:"🇵🇹", page:90},
-  {name:"Congo DR",      group:"K", code:"COD", flag:"🇨🇩", page:92},
-  {name:"Uzbekistán",    group:"K", code:"UZB", flag:"🇺🇿", page:94},
-  {name:"Colombia",      group:"K", code:"COL", flag:"🇨🇴", page:96},
-  // Grupo L - vino
-  {name:"Inglaterra",    group:"L", code:"ENG", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", page:98},
-  {name:"Croacia",       group:"L", code:"CRO", flag:"🇭🇷", page:100},
-  {name:"Ghana",         group:"L", code:"GHA", flag:"🇬🇭", page:102},
-  {name:"Panamá",        group:"L", code:"PAN", flag:"🇵🇦", page:104},
+  {name:"México",group:"A",code:"MEX",flag:"🇲🇽"},{name:"Sudáfrica",group:"A",code:"RSA",flag:"🇿🇦"},{name:"Korea Republic",group:"A",code:"KOR",flag:"🇰🇷"},{name:"Czechia",group:"A",code:"CZE",flag:"🇨🇿"},
+  {name:"Canadá",group:"B",code:"CAN",flag:"🇨🇦"},{name:"Bosnia-Herz.",group:"B",code:"BIH",flag:"🇧🇦"},{name:"Qatar",group:"B",code:"QAT",flag:"🇶🇦"},{name:"Suiza",group:"B",code:"SUI",flag:"🇨🇭"},
+  {name:"Brasil",group:"C",code:"BRA",flag:"🇧🇷"},{name:"Marruecos",group:"C",code:"MAR",flag:"🇲🇦"},{name:"Haití",group:"C",code:"HAI",flag:"🇭🇹"},{name:"Escocia",group:"C",code:"SCO",flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿"},
+  {name:"EUA",group:"D",code:"USA",flag:"🇺🇸"},{name:"Paraguay",group:"D",code:"PAR",flag:"🇵🇾"},{name:"Australia",group:"D",code:"AUS",flag:"🇦🇺"},{name:"Türkiye",group:"D",code:"TUR",flag:"🇹🇷"},
+  {name:"Alemania",group:"E",code:"GER",flag:"🇩🇪"},{name:"Curaçao",group:"E",code:"CUW",flag:"🇨🇼"},{name:"Côte d'Ivoire",group:"E",code:"CIV",flag:"🇨🇮"},{name:"Ecuador",group:"E",code:"ECU",flag:"🇪🇨"},
+  {name:"Países Bajos",group:"F",code:"NED",flag:"🇳🇱"},{name:"Japón",group:"F",code:"JPN",flag:"🇯🇵"},{name:"Suecia",group:"F",code:"SWE",flag:"🇸🇪"},{name:"Túnez",group:"F",code:"TUN",flag:"🇹🇳"},
+  {name:"Bélgica",group:"G",code:"BEL",flag:"🇧🇪"},{name:"Egipto",group:"G",code:"EGY",flag:"🇪🇬"},{name:"IR Irán",group:"G",code:"IRN",flag:"🇮🇷"},{name:"Nueva Zelanda",group:"G",code:"NZL",flag:"🇳🇿"},
+  {name:"España",group:"H",code:"ESP",flag:"🇪🇸"},{name:"Cabo Verde",group:"H",code:"CPV",flag:"🇨🇻"},{name:"Arabia Saudita",group:"H",code:"KSA",flag:"🇸🇦"},{name:"Uruguay",group:"H",code:"URU",flag:"🇺🇾"},
+  {name:"Francia",group:"I",code:"FRA",flag:"🇫🇷"},{name:"Senegal",group:"I",code:"SEN",flag:"🇸🇳"},{name:"Irak",group:"I",code:"IRQ",flag:"🇮🇶"},{name:"Noruega",group:"I",code:"NOR",flag:"🇳🇴"},
+  {name:"Argentina",group:"J",code:"ARG",flag:"🇦🇷"},{name:"Argelia",group:"J",code:"ALG",flag:"🇩🇿"},{name:"Austria",group:"J",code:"AUT",flag:"🇦🇹"},{name:"Jordania",group:"J",code:"JOR",flag:"🇯🇴"},
+  {name:"Portugal",group:"K",code:"POR",flag:"🇵🇹"},{name:"Congo DR",group:"K",code:"COD",flag:"🇨🇩"},{name:"Uzbekistán",group:"K",code:"UZB",flag:"🇺🇿"},{name:"Colombia",group:"K",code:"COL",flag:"🇨🇴"},
+  {name:"Inglaterra",group:"L",code:"ENG",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},{name:"Croacia",group:"L",code:"CRO",flag:"🇭🇷"},{name:"Ghana",group:"L",code:"GHA",flag:"🇬🇭"},{name:"Panamá",group:"L",code:"PAN",flag:"🇵🇦"},
 ];
-
 const SPECIALS=[
-  {id:'panini00',name:'We Are Panini',group:'Especial',
-   stickers:[{id:'00',label:'WE ARE PANINI'}]},
-  {id:'fwc-intro',name:'Introducción',group:'Especial',
-   stickers:Array.from({length:8},(_,i)=>({id:'FWC'+(i+1),label:'FWC '+(i+1)}))},
-  {id:'fwc-history',name:'FIFA WC History',group:'Especial',
-   stickers:Array.from({length:11},(_,i)=>({id:'FWC'+(i+9),label:'FWC '+(i+9)}))},
-  {id:'coca-cola',name:'Coca-Cola',group:'Especial',
-   stickers:Array.from({length:18},(_,i)=>({id:'CC'+(i+1),label:'CC '+(i+1)}))}
+  {id:'sp-panini',name:'We Are Panini',color:'#7c4daa',stickers:[{id:'00',label:'WE ARE PANINI'}]},
+  {id:'sp-intro',name:'Introducción',color:'#7c4daa',stickers:Array.from({length:8},(_,i)=>({id:'FWC'+(i+1),label:'FWC '+(i+1)}))},
+  {id:'sp-history',name:'FIFA WC History',color:'#7c4daa',stickers:Array.from({length:11},(_,i)=>({id:'FWC'+(i+9),label:'FWC '+(i+9)}))},
+  {id:'sp-coca',name:'Coca-Cola',color:'#c8202e',stickers:Array.from({length:18},(_,i)=>({id:'CC'+(i+1),label:'CC '+(i+1)}))},
 ];
-
+const LABELS=['Escudo','Foto','J1','J2','J3','J4','J5','J6','J7','J8','J9','J10','J11','J12','J13','J14','J15','J16','J17','J18'];
 const TOTAL=998;
-const TEAM_LABELS=['1-Escudo','2-Foto','3-J1','4-J2','5-J3','6-J4','7-J5','8-J6','9-J7','10-J8','11-J9','12-J10','13-J11','14-J12','15-J13','16-J14','17-J15','18-J16','19-J17','20-J18'];
 
-// helpers para IDs de equipo
-function teamStickerIds(team){return Array.from({length:20},(_,i)=>team.code+'-'+(i+1));}
-function teamStickerItems(team){return Array.from({length:20},(_,i)=>({id:team.code+'-'+(i+1),label:TEAM_LABELS[i]}));}
+// ── STATE ─────────────────────────────────────────────────────
+let me=null,myS={},allUsers=[],allS={},openTeam=null,openSpecial=null,filter='todos',chan=null;
 
-let currentUser=null;
-let myStickers={};
-let allUsersStickers={};
-let allUsers=[];
-let openCountry=null;
-let openSpecial=null;
-let currentFilter='todos';
-let realtimeChannel=null;
+// ── HELPERS ───────────────────────────────────────────────────
+function ids(team){return Array.from({length:20},(_,i)=>team.code+'-'+(i+1));}
+function getSD(id){const s=myS[String(id)];return{have:s?.have||false,reps:s?.repeated_count||0};}
+function setSyncing(st){const d=document.getElementById('sync-dot');if(!d)return;d.className='sync-dot'+(st==='syncing'?' syncing':st==='error'?' error':'');}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function hideLoading(){document.getElementById('loading').classList.add('hidden');}
+function setLoading(msg){const l=document.getElementById('loading');l.classList.remove('hidden');if(msg)document.getElementById('loading-msg').textContent=msg;}
+function togglePass(id,btn){const i=document.getElementById(id);i.type=i.type==='password'?'text':'password';btn.style.opacity=i.type==='text'?'0.5':'1';}
+function showForm(f){document.getElementById('form-login').style.display=f==='login'?'block':'none';document.getElementById('form-register').style.display=f==='register'?'block':'none';}
 
-// ── UI helpers ──────────────────────────────────────────────
-function setLoading(msg){
-  document.getElementById('loading-screen').classList.remove('hidden');
-  document.getElementById('loading-msg').textContent=msg||'Cargando...';
-}
-function hideLoading(){
-  document.getElementById('loading-screen').classList.add('hidden');
-  document.getElementById('app').style.display='block';
-}
-function setSyncing(s){
-  const d=document.getElementById('sync-dot');if(!d)return;
-  d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
-  d.title=s==='syncing'?'Guardando...':(s==='error'?'Error al guardar':'Sincronizado');
-}
-function showToast(msg){
-  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
-}
-
-// ── Auth ────────────────────────────────────────────────────
-function togglePass(id,btn){
-  const inp=document.getElementById(id);
-  inp.type=inp.type==='password'?'text':'password';
-  btn.style.opacity=inp.type==='text'?'0.5':'1';
-}
-function showRegister(){document.getElementById('login-form').style.display='none';document.getElementById('reset-form').style.display='none';document.getElementById('register-form').style.display='block';}
-function showLogin(){document.getElementById('register-form').style.display='none';document.getElementById('reset-form').style.display='none';document.getElementById('login-form').style.display='block';}
-function showReset(){document.getElementById('login-form').style.display='none';document.getElementById('register-form').style.display='none';document.getElementById('reset-form').style.display='block';}
-
-async function doReset(){
-  const username=document.getElementById('reset-user').value.trim().toLowerCase();
-  const pass=document.getElementById('reset-pass').value;
-  const pass2=document.getElementById('reset-pass2').value;
-  const errEl=document.getElementById('reset-err');const okEl=document.getElementById('reset-ok');
-  errEl.style.display='none';okEl.style.display='none';
-  if(!username||pass.length<4){errEl.textContent=T('err_fields');errEl.style.display='block';return;}
-  if(pass!==pass2){errEl.textContent=T('err_match');errEl.style.display='block';return;}
-  const btn=document.getElementById('reset-btn');btn.disabled=true;
-  const{data:existing}=await sb.from('users').select('id').eq('username',username).maybeSingle();
-  if(!existing){errEl.textContent=lang==='es'?'Usuario no encontrado':'Username not found';errEl.style.display='block';btn.disabled=false;return;}
-  const{error}=await sb.from('users').update({password:pass}).eq('username',username);
-  btn.disabled=false;
-  if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
-  okEl.textContent=lang==='es'?'Contraseña actualizada. Ya puedes iniciar sesión.':'Password updated. You can now sign in.';
-  okEl.style.display='block';
-  document.getElementById('reset-user').value='';document.getElementById('reset-pass').value='';document.getElementById('reset-pass2').value='';
-  setTimeout(()=>showLogin(),2000);
+// ── AUTH ──────────────────────────────────────────────────────
+async function doLogin(){
+  const username=document.getElementById('login-user').value.trim().toLowerCase();
+  const pass=document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-err');errEl.style.display='none';
+  const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='...';
+  const{data,error}=await sb.from('users').select('*').eq('username',username).eq('password',pass).maybeSingle();
+  if(error||!data){
+    errEl.textContent=error?'Error: '+error.message:'Usuario o contraseña incorrectos';
+    errEl.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;
+  }
+  me={id:data.id,username:data.username,name:data.name,photo_url:data.photo_url||null};
+  localStorage.setItem('panini_uid',data.id);
+  await loadMain();
 }
 
 async function doRegister(){
@@ -600,784 +369,351 @@ async function doRegister(){
   const username=document.getElementById('reg-user').value.trim().toLowerCase().replace(/\s+/g,'');
   const pass=document.getElementById('reg-pass').value;
   const pass2=document.getElementById('reg-pass2').value;
-  const errEl=document.getElementById('reg-err');
-  errEl.style.display='none';
-  if(!name||!username||pass.length<4){errEl.textContent=T('err_fields');errEl.style.display='block';return;}
-  if(pass!==pass2){errEl.textContent=T('err_match');errEl.style.display='block';return;}
+  const errEl=document.getElementById('reg-err');errEl.style.display='none';
+  if(!name||!username||pass.length<4){errEl.textContent='Completa todos los campos (mín. 4 caracteres)';errEl.style.display='block';return;}
+  if(pass!==pass2){errEl.textContent='Las contraseñas no coinciden';errEl.style.display='block';return;}
   const btn=document.getElementById('reg-btn');btn.disabled=true;btn.textContent='...';
-  try {
-    const{data:existing}=await sb.from('users').select('id').eq('username',username).maybeSingle();
-    if(existing){errEl.textContent=T('err_exists');errEl.style.display='block';btn.disabled=false;btn.textContent=T('reg_btn');return;}
-    const{data,error}=await sb.from('users').insert({username,name,password:pass}).select().single();
-    if(error||!data){errEl.textContent='Error: '+(error?.message||'intenta de nuevo');errEl.style.display='block';btn.disabled=false;btn.textContent=T('reg_btn');return;}
-    currentUser={id:data.id,username:data.username,name:data.name,photo_url:data.photo_url||null};
-    localStorage.setItem('panini_uid',data.id);
-    await loadAndShowMain();
-  } catch(e){
-    errEl.textContent='Error: '+e.message;errEl.style.display='block';
-    btn.disabled=false;btn.textContent=T('reg_btn');
-  }
-}
-
-async function doLogin(){
-  const username=document.getElementById('login-user').value.trim().toLowerCase();
-  const pass=document.getElementById('login-pass').value;
-  const errEl=document.getElementById('login-err');errEl.style.display='none';
-  const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='...';
-  try {
-    const{data,error}=await sb.from('users').select('*').eq('username',username).eq('password',pass).maybeSingle();
-    if(error){errEl.textContent='Error BD: '+error.message;errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;}
-    if(!data){
-      // Try finding just by username to debug
-      const{data:d2}=await sb.from('users').select('username,password').eq('username',username).maybeSingle();
-      errEl.textContent=d2?'Usuario existe pero contraseña incorrecta. Pass guardado: "'+d2.password+'"':'Usuario no encontrado: "'+username+'"';
-      errEl.style.display='block';btn.disabled=false;btn.textContent=T('login_btn');return;
-    }
-    currentUser={id:data.id,username:data.username,name:data.name,photo_url:data.photo_url||null};
-    localStorage.setItem('panini_uid',data.id);
-    await loadAndShowMain();
-  } catch(e){
-    errEl.textContent='Error: '+e.message;errEl.style.display='block';
-    btn.disabled=false;btn.textContent=T('login_btn');
-  }
+  const{data:ex}=await sb.from('users').select('id').eq('username',username).maybeSingle();
+  if(ex){errEl.textContent='Ese usuario ya existe';errEl.style.display='block';btn.disabled=false;btn.textContent='Crear cuenta';return;}
+  const{data,error}=await sb.from('users').insert({username,name,password:pass}).select().single();
+  if(error||!data){errEl.textContent='Error: '+(error?.message||'intenta de nuevo');errEl.style.display='block';btn.disabled=false;btn.textContent='Crear cuenta';return;}
+  me={id:data.id,username:data.username,name:data.name,photo_url:null};
+  localStorage.setItem('panini_uid',data.id);
+  await loadMain();
 }
 
 function doLogout(){
-  if(realtimeChannel)sb.removeChannel(realtimeChannel);
-  currentUser=null;myStickers={};allUsersStickers={};allUsers=[];
+  if(chan)sb.removeChannel(chan);
+  me=null;myS={};allUsers=[];allS={};
   localStorage.removeItem('panini_uid');
   document.getElementById('screen-main').classList.remove('active');
   document.getElementById('screen-auth').classList.add('active');
-  showLogin();
-  document.getElementById('login-btn').disabled=false;
-  document.getElementById('login-btn').textContent=T('login_btn');
+  showForm('login');
+  document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').textContent='Entrar';
   document.getElementById('login-user').value='';document.getElementById('login-pass').value='';
 }
 
-// ── Load data ───────────────────────────────────────────────
-async function loadAndShowMain(){
-  try {
-    setLoading(T('loading'));
-    const[{data:mySt},{data:users},{data:allSt}]=await Promise.all([
-      sb.from('stickers').select('*').eq('user_id',currentUser.id),
-      sb.from('users').select('id,username,name,photo_url'),
-      sb.from('stickers').select('*')
-    ]);
-    myStickers={};
-    (mySt||[]).forEach(s=>{myStickers[s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
-    allUsers=users||[];
-    allUsersStickers={};
-    (allSt||[]).forEach(s=>{
-      if(!allUsersStickers[s.user_id])allUsersStickers[s.user_id]={};
-      allUsersStickers[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
-    });
-    hideLoading();
-    showMain();
-    subscribeRealtime();
-  } catch(e){
-    console.error('loadAndShowMain error:',e);
-    hideLoading();
+// ── LOAD ──────────────────────────────────────────────────────
+async function loadMain(){
+  setLoading('Cargando tu colección...');
+  const[{data:mySt,error:e1},{data:users,error:e2},{data:allSt,error:e3}]=await Promise.all([
+    sb.from('stickers').select('*').eq('user_id',me.id),
+    sb.from('users').select('id,username,name,photo_url'),
+    sb.from('stickers').select('*')
+  ]);
+  if(e1||e2||e3){
+    document.getElementById('loading-msg').textContent='Error al cargar: '+(e1||e2||e3).message;
+    return;
   }
-}
-
-function subscribeRealtime(){
-  if(realtimeChannel)sb.removeChannel(realtimeChannel);
-  realtimeChannel=sb.channel('stickers-live')
-    .on('postgres_changes',{event:'*',schema:'public',table:'stickers'},p=>{
-      const s=p.new||(p.eventType==='DELETE'?p.old:null);if(!s)return;
-      const val=p.eventType==='DELETE'?null:{have:s.have,repeated_count:s.repeated_count};
-      if(!allUsersStickers[s.user_id])allUsersStickers[s.user_id]={};
-      if(val)allUsersStickers[s.user_id][s.sticker_id]=val;
-      else delete allUsersStickers[s.user_id][s.sticker_id];
-      if(s.user_id===currentUser.id){
-        if(val)myStickers[s.sticker_id]=val;else delete myStickers[s.sticker_id];
-      }
-      updateStats();renderCountryGrid();
-    })
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'users'},p=>{
-      if(p.new&&!allUsers.find(u=>u.id===p.new.id)){
-        allUsers.push({id:p.new.id,username:p.new.username,name:p.new.name});
-      }
-    })
-    .subscribe();
-}
-
-function showMain(){
+  myS={};(mySt||[]).forEach(s=>{myS[s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
+  allUsers=users||[];
+  allS={};(allSt||[]).forEach(s=>{if(!allS[s.user_id])allS[s.user_id]={};allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
+  hideLoading();
   document.getElementById('screen-auth').classList.remove('active');
   document.getElementById('screen-main').classList.add('active');
-  const av=document.getElementById('header-avatar');
-  if(currentUser.photo_url){
-    av.innerHTML=`<img src="${currentUser.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    av.style.padding='0';
-  } else {
-    av.innerHTML='';
-    av.textContent=currentUser.name.charAt(0).toUpperCase();
-  }
-  document.getElementById('header-greeting').textContent=T('hello')+currentUser.name.split(' ')[0];
-  switchTab('mi-album');
-  renderCountryGrid();
-  updateStats();
+  const av=document.getElementById('header-av');
+  av.innerHTML='';av.textContent=me.name.charAt(0).toUpperCase();
+  document.getElementById('header-greeting').textContent='Hola, '+me.name.split(' ')[0];
+  switchTab('album');
+  renderGrid();updateStats();
+  subscribeRT();
 }
 
-// ── Tabs ────────────────────────────────────────────────────
+function subscribeRT(){
+  if(chan)sb.removeChannel(chan);
+  chan=sb.channel('rt').on('postgres_changes',{event:'*',schema:'public',table:'stickers'},p=>{
+    const s=p.new||(p.eventType==='DELETE'?p.old:null);if(!s)return;
+    const v=p.eventType==='DELETE'?null:{have:s.have,repeated_count:s.repeated_count};
+    if(!allS[s.user_id])allS[s.user_id]={};
+    if(v)allS[s.user_id][s.sticker_id]=v;else delete allS[s.user_id][s.sticker_id];
+    if(s.user_id===me.id){if(v)myS[s.sticker_id]=v;else delete myS[s.sticker_id];}
+    updateStats();renderGrid();
+  }).subscribe();
+}
+
+// ── TABS ──────────────────────────────────────────────────────
 function switchTab(id){
-  const ids=['mi-album','repetidas','grupo','intercambios','config'];
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
-  document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
-  document.getElementById('tab-'+id).style.display='block';
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['album','repetidas','grupo','cambios','invitar'][i]===id));
+  ['album','repetidas','grupo','cambios','invitar'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===id?'block':'none';});
   if(id==='grupo')renderMembers();
-  if(id==='intercambios')renderTrades();
-  if(id==='repetidas')renderRepetidas();
+  if(id==='cambios')renderTrades();
+  if(id==='repetidas')renderReps();
 }
 
-// ── Stats ────────────────────────────────────────────────────
+// ── STATS ─────────────────────────────────────────────────────
 function updateStats(){
-  const vals=Object.values(myStickers);
+  const vals=Object.values(myS);
   const have=vals.filter(v=>v.have).length;
   const reps=vals.reduce((a,v)=>a+(v.repeated_count||0),0);
   const pct=Math.round(have/TOTAL*100);
-  document.getElementById('stat-tengo').textContent=have;
-  document.getElementById('stat-faltan').textContent=TOTAL-have;
-  document.getElementById('stat-repetidas').textContent=reps;
-  document.getElementById('stat-pct').textContent=have+' / '+TOTAL;
+  document.getElementById('st-tengo').textContent=have;
+  document.getElementById('st-faltan').textContent=TOTAL-have;
+  document.getElementById('st-reps').textContent=reps;
+  document.getElementById('st-pct').textContent=have+' / '+TOTAL;
   document.getElementById('progress-fill').style.width=pct+'%';
 }
 
-// ── Sticker helpers ──────────────────────────────────────────
-function getSD(id){const s=myStickers[String(id)];return{have:s?.have||false,reps:s?.repeated_count||0};}
+// ── GRID ──────────────────────────────────────────────────────
+function setFilter(f,btn){filter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderGrid();}
 
-async function saveSticker(id,have,reps){
-  setSyncing('syncing');
-  const{error}=await sb.from('stickers').upsert(
-    {user_id:currentUser.id,sticker_id:String(id),have,repeated_count:reps,updated_at:new Date().toISOString()},
-    {onConflict:'user_id,sticker_id'}
-  );
-  setSyncing(error?'error':'ok');
-  if(!error){
-    myStickers[String(id)]={have,repeated_count:reps};
-    if(!allUsersStickers[currentUser.id])allUsersStickers[currentUser.id]={};
-    allUsersStickers[currentUser.id][String(id)]={have,repeated_count:reps};
-  }
-}
-
-// ── Filter & Grid ─────────────────────────────────────────────
-function filterCountry(f,btn){
-  currentFilter=f;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderCountryGrid();
-}
-
-function renderCountryGrid(){
-  const grid=document.getElementById('country-grid');grid.innerHTML='';
-
-  const addLabel=(text)=>{
-    const el=document.createElement('div');
-    el.style='grid-column:1/-1;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin:6px 0 2px';
-    el.textContent=text;grid.appendChild(el);
-  };
-  const addDivider=()=>{
-    const el=document.createElement('div');
-    el.style='grid-column:1/-1;height:1px;background:#ebebeb;margin:8px 0 4px';
-    grid.appendChild(el);
-  };
-
-  addLabel('Secciones especiales');
+function renderGrid(){
+  const g=document.getElementById('team-grid');g.innerHTML='';
+  // Specials
+  const sh=document.createElement('div');sh.className='grid-header';sh.textContent='Secciones especiales';g.appendChild(sh);
   SPECIALS.forEach(sec=>{
-    const ids=sec.stickers.map(s=>s.id);
-    const have=ids.filter(id=>getSD(id).have).length;
-    const total=ids.length;const pct=Math.round(have/total*100);const complete=have===total;
-    if(currentFilter==='completo'&&!complete)return;
-    if(currentFilter==='incompleto'&&complete)return;
-    const c=document.createElement('div');c.className='country-card'+(complete?' complete':'');
-    c.style='border-color:#c8b8e8';
-    c.innerHTML=`<div class="country-name">${sec.name}</div>
-    <div class="country-group" style="color:#9b7fd4">${sec.group}</div>
-    <div class="country-mini-progress"><div class="country-mini-fill" style="width:${pct}%;background:#7c4daa"></div></div>
-    <div class="country-count">${have}/${total}${complete?' ✓':''}</div>`;
-    c.onclick=()=>openSpecialModal(sec);grid.appendChild(c);
+    const sids=sec.stickers.map(s=>s.id);
+    const have=sids.filter(id=>getSD(id).have).length;
+    const total=sids.length;const pct=Math.round(have/total*100);const complete=have===total;
+    if(filter==='completo'&&!complete)return;if(filter==='incompleto'&&complete)return;
+    const c=document.createElement('div');c.className='team-card'+(complete?' complete':'');
+    c.style=`border-left:4px solid ${sec.color}`;
+    c.innerHTML=`<div class="team-name">${sec.name}</div><div class="team-group" style="color:${sec.color}">Especial</div>
+    <div class="mini-bar"><div class="mini-fill" style="width:${pct}%;background:${sec.color}"></div></div>
+    <div class="team-count">${have}/${total}${complete?' ✓':''}</div>`;
+    c.onclick=()=>openModal(sec,true);g.appendChild(c);
   });
-
-  addDivider();addLabel('Equipos');
-  let lastGroup='';
+  const div=document.createElement('div');div.className='grid-divider';g.appendChild(div);
+  const th=document.createElement('div');th.className='grid-header';th.textContent='Equipos';g.appendChild(th);
+  let lastGrp='';
   TEAMS.forEach(team=>{
-    if(team.group!==lastGroup){
-      lastGroup=team.group;
-      const color=GROUP_COLORS[team.group]||'#1a4d2e';
-      const gh=document.createElement('div');
-      gh.style=`grid-column:1/-1;background:${color};color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;margin:8px 0 4px;letter-spacing:.05em`;
-      gh.textContent='GRUPO '+team.group;
-      grid.appendChild(gh);
-    }
-    const ids=teamStickerIds(team);
-    const have=ids.filter(id=>getSD(id).have).length;
+    const tids=ids(team);
+    const have=tids.filter(id=>getSD(id).have).length;
     const pct=Math.round(have/20*100);const complete=have===20;
-    if(currentFilter==='completo'&&!complete)return;
-    if(currentFilter==='incompleto'&&complete)return;
-    const color=GROUP_COLORS[team.group]||'#1a4d2e';
-    const c=document.createElement('div');c.className='country-card'+(complete?' complete':'');
+    if(filter==='completo'&&!complete)return;if(filter==='incompleto'&&complete)return;
+    const color=GRP_COLORS[team.group]||'#333';
+    if(team.group!==lastGrp){
+      lastGrp=team.group;
+      const gh=document.createElement('div');
+      gh.style=`grid-column:1/-1;background:${color};color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;margin:6px 0 2px`;
+      gh.textContent='GRUPO '+team.group;g.appendChild(gh);
+    }
+    const c=document.createElement('div');c.className='team-card'+(complete?' complete':'');
     c.style=`border-left:4px solid ${color}`;
-    c.innerHTML=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-      <span style="font-size:18px;line-height:1">${team.flag}</span>
-      <div>
-        <div class="country-name">${team.name}</div>
-        <div class="country-group" style="color:${color}">Grupo ${team.group} · p.${team.page}</div>
-      </div>
+    c.innerHTML=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+      <span style="font-size:17px">${team.flag}</span>
+      <div><div class="team-name">${team.name}</div><div class="team-group" style="color:${color}">Grupo ${team.group}</div></div>
     </div>
-    <div class="country-mini-progress"><div class="country-mini-fill" style="width:${pct}%;background:${color}"></div></div>
-    <div class="country-count">${have}/20${complete?' ✓':''}</div>`;
-    c.onclick=()=>openCountryModal(team);grid.appendChild(c);
+    <div class="mini-bar"><div class="mini-fill" style="width:${pct}%;background:${color}"></div></div>
+    <div class="team-count">${have}/20${complete?' ✓':''}</div>`;
+    c.onclick=()=>openModal(team,false);g.appendChild(c);
   });
 }
 
-// ── Modals ───────────────────────────────────────────────────
-function openCountryModal(team){
-  openCountry=team;openSpecial=null;
-  document.getElementById('modal-country-name').textContent=team.flag+' '+team.name+' · Gr.'+team.group;
-  renderStickerGrid();document.getElementById('country-modal').classList.add('open');
+// ── MODAL ─────────────────────────────────────────────────────
+function openModal(item,isSpecial){
+  isSpecial?openSpecial=item:openTeam=item;
+  if(!isSpecial)openSpecial=null;else openTeam=null;
+  document.getElementById('modal-title').textContent=isSpecial?item.name:(item.flag+' '+item.name+' · Gr.'+item.group);
+  renderStickers();
+  document.getElementById('team-modal').classList.add('open');
 }
-function openSpecialModal(sec){
-  openSpecial=sec;openCountry=null;
-  document.getElementById('modal-country-name').textContent=sec.name;
-  renderStickerGrid();document.getElementById('country-modal').classList.add('open');
-}
-function closeModal(){document.getElementById('country-modal').classList.remove('open');openCountry=null;openSpecial=null;}
-function closeMemberModal(){document.getElementById('member-modal').classList.remove('open');}
+function closeModal(){document.getElementById('team-modal').classList.remove('open');openTeam=null;openSpecial=null;}
 
-function renderStickerGrid(){
-  const grid=document.getElementById('sticker-grid');grid.innerHTML='';
-  const items=openSpecial
-    ?openSpecial.stickers
-    :teamStickerItems(openCountry);
+function renderStickers(){
+  const g=document.getElementById('sticker-grid');g.innerHTML='';
+  const items=openSpecial?openSpecial.stickers:Array.from({length:20},(_,i)=>({id:openTeam.code+'-'+(i+1),label:LABELS[i]}));
   items.forEach(item=>{
     const{have,reps}=getSD(item.id);
-    grid.appendChild(buildBtn(item,have,reps));
+    const btn=document.createElement('button');
+    btn.className='sticker-btn'+(have?' have':'')+(reps>0?' repeated':'');
+    const numLabel=openSpecial?item.id:item.id.split('-')[1];
+    const tagLabel=openSpecial?item.label:(item.label);
+    btn.innerHTML=`<span class="s-num">${numLabel}</span><span class="s-tag">${tagLabel}</span><span class="s-tag">${have?(reps>0?'x'+(reps+1):'✓'):''}</span>`;
+    if(reps>0){const x=document.createElement('span');x.className='del-x';x.textContent='×';x.onclick=(e)=>{e.stopPropagation();onDelete(item.id,btn);};btn.appendChild(x);}
+    btn.onclick=()=>cycleSticker(item.id,btn);
+    g.appendChild(btn);
   });
-}
-
-function buildBtn(item,have,reps){
-  const btn=document.createElement('button');
-  btn.className='sticker-btn'+(have?' have':'')+(reps>0?' repeated':'');
-  const numLabel=openSpecial?item.id:(item.id.split('-')[1]);
-  btn.innerHTML=`<span class="sticker-num">${numLabel}</span><span class="sticker-tag">${item.label.split('-')[1]||item.label}</span><span class="sticker-status">${have?(reps>0?'x'+(reps+1):'✓'):''}</span>`;
-  btn.querySelector('.sticker-status').className='sticker-tag';
-  if(reps>0)addDelBtn(btn,item.id);
-  btn.onclick=()=>cycleSticker(item.id,btn);
-  return btn;
-}
-
-function addDelBtn(btn,id){
-  const del=document.createElement('span');del.className='del-btn';del.textContent='×';
-  del.onclick=(e)=>{e.stopPropagation();onDelete(id,btn);};btn.appendChild(del);
 }
 
 async function cycleSticker(id,btn){
   const{have,reps}=getSD(id);
   const newHave=true;const newReps=have?reps+1:0;
   refreshBtn(btn,newHave,newReps,id);
-  updateStats();renderCountryGrid();
-  await saveSticker(id,newHave,newReps);
+  updateStats();renderGrid();
+  await saveS(id,newHave,newReps);
 }
-
 async function onDelete(id,btn){
   refreshBtn(btn,false,0,id);
-  updateStats();renderCountryGrid();
-  await saveSticker(id,false,0);
+  updateStats();renderGrid();
+  await saveS(id,false,0);
 }
-
 function refreshBtn(btn,have,reps,id){
   btn.className='sticker-btn'+(have?' have':'')+(reps>0?' repeated':'');
-  const tags=btn.querySelectorAll('.sticker-tag');
+  const tags=btn.querySelectorAll('.s-tag');
   if(tags[1])tags[1].textContent=have?(reps>0?'x'+(reps+1):'✓'):'';
-  const d=btn.querySelector('.del-btn');if(d)d.remove();
-  if(reps>0)addDelBtn(btn,id);
+  const x=btn.querySelector('.del-x');if(x)x.remove();
+  if(reps>0){const nx=document.createElement('span');nx.className='del-x';nx.textContent='×';nx.onclick=(e)=>{e.stopPropagation();onDelete(id,btn);};btn.appendChild(nx);}
+}
+
+async function saveS(id,have,reps){
+  setSyncing('syncing');
+  const{error}=await sb.from('stickers').upsert({user_id:me.id,sticker_id:String(id),have,repeated_count:reps,updated_at:new Date().toISOString()},{onConflict:'user_id,sticker_id'});
+  setSyncing(error?'error':'ok');
+  myS[String(id)]={have,repeated_count:reps};
+  if(!allS[me.id])allS[me.id]={};
+  allS[me.id][String(id)]={have,repeated_count:reps};
 }
 
 async function markAll(mode){
-  const items=openSpecial
-    ?openSpecial.stickers.map(s=>s.id)
-    :teamStickerIds(openCountry);
-  const rows=items.map(id=>({user_id:currentUser.id,sticker_id:String(id),have:mode==='have',repeated_count:0,updated_at:new Date().toISOString()}));
+  const items=openSpecial?openSpecial.stickers.map(s=>s.id):Array.from({length:20},(_,i)=>openTeam.code+'-'+(i+1));
+  const rows=items.map(id=>({user_id:me.id,sticker_id:String(id),have:mode==='have',repeated_count:0,updated_at:new Date().toISOString()}));
   setSyncing('syncing');
   const{error}=await sb.from('stickers').upsert(rows,{onConflict:'user_id,sticker_id'});
   setSyncing(error?'error':'ok');
-  items.forEach(id=>{
-    myStickers[String(id)]={have:mode==='have',repeated_count:0};
-    if(!allUsersStickers[currentUser.id])allUsersStickers[currentUser.id]={};
-    allUsersStickers[currentUser.id][String(id)]={have:mode==='have',repeated_count:0};
-  });
-  renderStickerGrid();updateStats();renderCountryGrid();
+  items.forEach(id=>{myS[String(id)]={have:mode==='have',repeated_count:0};if(!allS[me.id])allS[me.id]={};allS[me.id][String(id)]={have:mode==='have',repeated_count:0};});
+  renderStickers();updateStats();renderGrid();
 }
 
-// ── Members ──────────────────────────────────────────────────
+// ── REPS ──────────────────────────────────────────────────────
+function renderReps(){
+  const list=document.getElementById('reps-list');list.innerHTML='';let found=false;
+  const sections=[...TEAMS.map(t=>({name:t.flag+' '+t.name,color:GRP_COLORS[t.group]||'#333',items:Array.from({length:20},(_,i)=>({id:t.code+'-'+(i+1),label:LABELS[i]}))})),...SPECIALS.map(s=>({name:s.name,color:s.color,items:s.stickers}))];
+  sections.forEach(sec=>{
+    const repItems=sec.items.filter(item=>{const s=myS[String(item.id)];return s&&s.have&&(s.repeated_count||0)>0;});
+    if(!repItems.length)return;found=true;
+    const block=document.createElement('div');block.className='rep-block';
+    block.innerHTML=`<div class="rep-head" style="background:${sec.color}">${sec.name}</div>`;
+    repItems.forEach(item=>{
+      const reps=myS[String(item.id)].repeated_count||0;
+      const numLabel=String(item.id).includes('-')?item.id.split('-')[1]:item.id;
+      const labelClean=item.label.includes('-')?item.label.split('-')[1]:item.label;
+      const row=document.createElement('div');row.className='rep-row';
+      row.innerHTML=`<div><span style="font-weight:700">#${numLabel}</span> <span style="color:#aaa;font-size:12px">${labelClean}</span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="rep-cnt">x${reps+1} (${reps} extra)</span>
+        <div class="rep-btns">
+          <button class="rep-btn plus" onclick="changeRep('${item.id}',1)">+</button>
+          <button class="rep-btn minus" onclick="changeRep('${item.id}',-1)">−</button>
+        </div>
+      </div>`;
+      block.appendChild(row);
+    });
+    list.appendChild(block);
+  });
+  if(!found)list.innerHTML='<div class="empty">No tienes estampas repetidas aún.</div>';
+}
+
+async function changeRep(id,delta){
+  const s=myS[String(id)];if(!s||!s.have)return;
+  const newReps=Math.max(0,(s.repeated_count||0)+delta);
+  await saveS(id,true,newReps);
+  updateStats();renderReps();
+}
+
+// ── MEMBERS ───────────────────────────────────────────────────
 function renderMembers(){
   const list=document.getElementById('members-list');list.innerHTML='';
-  if(!allUsers.length){list.innerHTML=`<div class="empty-state">${T('no_members')}</div>`;return;}
+  if(!allUsers.length){list.innerHTML='<div class="empty">Nadie más se ha registrado aún.</div>';return;}
   allUsers.forEach(u=>{
-    const st=allUsersStickers[u.id]||{};
+    const st=allS[u.id]||{};
     const have=Object.values(st).filter(v=>v.have).length;
     const reps=Object.values(st).reduce((a,v)=>a+(v.repeated_count||0),0);
     const pct=Math.round(have/TOTAL*100);
-    const me=u.id===currentUser.id;
-    const avatarContent=u.photo_url?`<img src="${u.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:(u.name.charAt(0).toUpperCase());
     const c=document.createElement('div');c.className='member-card';
     c.innerHTML=`<div class="member-top">
-      <div class="member-avatar" style="overflow:hidden">${avatarContent}</div>
-      <div class="member-info">
-        <h4>${u.name}${me?` <span style="font-size:11px;color:#aaa;font-weight:400">(${lang==='es'?'tú':'you'})</span>`:''}</h4>
-        <p>${have}/${TOTAL} ${T('stickers')} · ${reps} ${T('stat_reps').toLowerCase()} · ${pct}%</p>
-      </div>
+      <div class="member-av">${u.name.charAt(0).toUpperCase()}</div>
+      <div class="member-info"><h4>${u.name}${u.id===me.id?' <span style="font-size:11px;color:#aaa">(tú)</span>':''}</h4><p>${have}/${TOTAL} · ${reps} repetidas · ${pct}%</p></div>
     </div>
-    <div class="member-progress"><div class="member-progress-fill" style="width:${pct}%"></div></div>
-    ${!me?`<div class="member-actions">
-      <button class="tag-btn" onclick="showMemberCol('${u.id}','${u.name.replace(/'/g,"\\'")}')"> ${T('view_col')}</button>
-      <button class="tag-btn" onclick="showTrade('${u.id}','${u.name.replace(/'/g,"\\'")}')">⇄ ${T('view_trades')}</button>
+    <div class="member-bar"><div class="member-bar-fill" style="width:${pct}%"></div></div>
+    ${u.id!==me.id?`<div class="member-actions">
+      <button class="tag-btn" onclick="showMemberCol('${u.id}','${u.name.replace(/'/g,"\\'")}')">Ver colección</button>
+      <button class="tag-btn" onclick="showTrade('${u.id}','${u.name.replace(/'/g,"\\'")}')">Ver intercambios</button>
     </div>`:''}`;
     list.appendChild(c);
   });
 }
 
 function showMemberCol(uid,name){
-  document.getElementById('member-modal-title').textContent=(lang==='es'?'Colección de ':'Collection: ')+name;
+  document.getElementById('member-modal-title').textContent='Colección de '+name;
   const body=document.getElementById('member-modal-body');body.innerHTML='';
-  const st=allUsersStickers[uid]||{};
+  const st=allS[uid]||{};
   TEAMS.forEach(team=>{
-    const ids=teamStickerIds(team);
-    const have=ids.filter(id=>st[id]?.have).length;
-    const reps=ids.filter(id=>(st[id]?.repeated_count||0)>0).length;
+    const tids=ids(team);
+    const have=tids.filter(id=>st[id]?.have).length;
+    const reps=tids.filter(id=>(st[id]?.repeated_count||0)>0).length;
     const row=document.createElement('div');
     row.style='display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f5f5f0;font-size:13px';
-    row.innerHTML=`<span style="font-weight:600">${team.flag} ${team.name} <span style="font-weight:400;color:#bbb;font-size:11px">${T('group_label')} ${team.group}</span></span>
-    <span><span style="color:#555">${have}/20</span>${reps>0?` · <span style="color:#b8860b;font-weight:600">${reps} ${lang==='es'?'rep.':'dup.'}</span>`:''}${have===20?' <span style="color:#2d7a4f">✓</span>':''}</span>`;
+    row.innerHTML=`<span style="font-weight:600">${team.flag} ${team.name}</span>
+    <span><span style="color:#555">${have}/20</span>${reps>0?` · <span style="color:#b8860b;font-weight:600">${reps} rep.</span>`:''}${have===20?' ✓':''}</span>`;
     body.appendChild(row);
   });
   document.getElementById('member-modal').classList.add('open');
 }
 
 function showTrade(uid,name){
-  document.getElementById('member-modal-title').textContent=(lang==='es'?'Intercambios con ':'Swaps with ')+name;
+  document.getElementById('member-modal-title').textContent='Intercambios con '+name;
   const body=document.getElementById('member-modal-body');body.innerHTML='';
-  const they=allUsersStickers[uid]||{};
-  const give=[],want=[];
-  const check=(id)=>{
-    const iRep=(myStickers[String(id)]?.repeated_count||0)>0;
-    const iHave=myStickers[String(id)]?.have;
-    const tHave=they[String(id)]?.have;
-    const tRep=(they[String(id)]?.repeated_count||0)>0;
-    if(iRep&&!tHave)give.push(id);
-    if(!iHave&&tRep)want.push(id);
+  const they=allS[uid]||{};const give=[],want=[];
+  const check=id=>{
+    const iRep=(myS[String(id)]?.repeated_count||0)>0;const iHave=myS[String(id)]?.have;
+    const tHave=they[String(id)]?.have;const tRep=(they[String(id)]?.repeated_count||0)>0;
+    if(iRep&&!tHave)give.push(id);if(!iHave&&tRep)want.push(id);
   };
-  TEAMS.forEach(t=>teamStickerIds(t).forEach(check));
-  SPECIALS.forEach(s=>s.stickers.forEach(st=>check(st.id)));
-  if(!give.length&&!want.length){body.innerHTML=`<div class="empty-state">${T('no_possible')}</div>`;document.getElementById('member-modal').classList.add('open');return;}
-  const fmt=(arr)=>arr.slice(0,30).map(n=>`<span class="trade-tag">${n}</span>`).join('')+(arr.length>30?`<span style="font-size:11px;color:#aaa"> +${arr.length-30}</span>`:'');
-  const fmtN=(arr)=>arr.slice(0,30).map(n=>`<span class="trade-tag need">${n}</span>`).join('')+(arr.length>30?`<span style="font-size:11px;color:#aaa"> +${arr.length-30}</span>`:'');
-  if(give.length)body.innerHTML+=`<div class="trade-section-label">${T('give_to')} ${name} (${give.length})</div><div style="margin-bottom:10px">${fmt(give)}</div>`;
-  if(want.length)body.innerHTML+=`<div class="trade-section-label" style="margin-top:6px">${T('receives_from')} ${name} (${want.length})</div><div>${fmtN(want)}</div>`;
+  TEAMS.forEach(t=>ids(t).forEach(check));SPECIALS.forEach(s=>s.stickers.forEach(st=>check(st.id)));
+  if(!give.length&&!want.length){body.innerHTML='<div class="empty">Sin intercambios posibles aún.</div>';document.getElementById('member-modal').classList.add('open');return;}
+  const fmt=arr=>arr.slice(0,30).map(n=>`<span class="tag">${n}</span>`).join('')+(arr.length>30?` <span style="font-size:11px;color:#aaa">+${arr.length-30}</span>`:'');
+  const fmtN=arr=>arr.slice(0,30).map(n=>`<span class="tag need">${n}</span>`).join('')+(arr.length>30?` <span style="font-size:11px;color:#aaa">+${arr.length-30}</span>`:'');
+  if(give.length)body.innerHTML+=`<div class="trade-lbl">Le doy a ${name} (${give.length})</div><div style="margin-bottom:10px">${fmt(give)}</div>`;
+  if(want.length)body.innerHTML+=`<div class="trade-lbl" style="margin-top:8px">Me da ${name} (${want.length})</div><div>${fmtN(want)}</div>`;
   document.getElementById('member-modal').classList.add('open');
 }
 
-// ── Trades ───────────────────────────────────────────────────
+// ── TRADES ────────────────────────────────────────────────────
 function renderTrades(){
   const list=document.getElementById('trades-list');list.innerHTML='';
-  const others=allUsers.filter(u=>u.id!==currentUser.id);
-  if(!others.length){list.innerHTML=`<div class="empty-state">${T('no_members')}</div>`;return;}
+  const others=allUsers.filter(u=>u.id!==me.id);
+  if(!others.length){list.innerHTML='<div class="empty">Ningún amigo se ha unido aún.</div>';return;}
   let found=false;
   others.forEach(u=>{
-    const they=allUsersStickers[u.id]||{};
-    const give=[],want=[];
-    TEAMS.forEach(t=>teamStickerIds(t).forEach(id=>{
-      if((myStickers[id]?.repeated_count||0)>0&&!they[id]?.have)give.push(id);
-      if(!myStickers[id]?.have&&(they[id]?.repeated_count||0)>0)want.push(id);
+    const they=allS[u.id]||{};const give=[],want=[];
+    TEAMS.forEach(t=>ids(t).forEach(id=>{
+      if((myS[id]?.repeated_count||0)>0&&!they[id]?.have)give.push(id);
+      if(!myS[id]?.have&&(they[id]?.repeated_count||0)>0)want.push(id);
     }));
     if(give.length||want.length){
-      found=true;
-      const c=document.createElement('div');c.className='trade-card';
-      let h=`<div class="trade-header">${lang==='es'?'Con ':'With '}${u.name}</div>`;
-      if(give.length)h+=`<div class="trade-section-label">${T('give')} (${give.length})</div><div style="margin-bottom:6px">${give.slice(0,12).map(n=>`<span class="trade-tag">${n}</span>`).join('')}${give.length>12?`<span style="font-size:11px;color:#aaa"> +${give.length-12}</span>`:''}</div>`;
-      if(want.length)h+=`<div class="trade-section-label" style="margin-top:6px">${T('receive')} (${want.length})</div><div>${want.slice(0,12).map(n=>`<span class="trade-tag need">${n}</span>`).join('')}${want.length>12?`<span style="font-size:11px;color:#aaa"> +${want.length-12}</span>`:''}</div>`;
+      found=true;const c=document.createElement('div');c.className='trade-card';
+      let h=`<div class="trade-h">Con ${u.name}</div>`;
+      if(give.length)h+=`<div class="trade-lbl">Le doy (${give.length})</div><div style="margin-bottom:6px">${give.slice(0,12).map(n=>`<span class="tag">${n}</span>`).join('')}${give.length>12?` <span style="font-size:11px;color:#aaa">+${give.length-12}</span>`:''}</div>`;
+      if(want.length)h+=`<div class="trade-lbl" style="margin-top:6px">Me da (${want.length})</div><div>${want.slice(0,12).map(n=>`<span class="tag need">${n}</span>`).join('')}${want.length>12?` <span style="font-size:11px;color:#aaa">+${want.length-12}</span>`:''}</div>`;
       c.innerHTML=h;list.appendChild(c);
     }
   });
-  if(!found)list.innerHTML=`<div class="empty-state">${T('no_trades').replace('\\n','<br>')}</div>`;
+  if(!found)list.innerHTML='<div class="empty">Sin intercambios posibles aún.<br>Marca tus repetidas primero.</div>';
 }
 
-// ── Repetidas ─────────────────────────────────────────────────
-function renderRepetidas(){
-  const list=document.getElementById('repetidas-list');list.innerHTML='';
-  // Gather all repeated stickers grouped by team
-  let totalReps=0;
-  const allSections=[
-    ...TEAMS.map(team=>({
-      name:team.flag+' '+team.name,
-      color:GROUP_COLORS[team.group]||'#1a4d2e',
-      items:teamStickerItems(team)
-    })),
-    ...SPECIALS.map(sec=>({
-      name:sec.name,color:'#7c4daa',
-      items:sec.stickers
-    }))
-  ];
-
-  allSections.forEach(sec=>{
-    const repItems=sec.items.filter(item=>{
-      const s=myStickers[String(item.id)];
-      return s&&s.have&&(s.repeated_count||0)>0;
-    });
-    if(!repItems.length)return;
-    totalReps+=repItems.length;
-
-    const block=document.createElement('div');
-    block.style='margin-bottom:14px;background:#fff;border-radius:12px;border:1.5px solid #ebebeb;overflow:hidden';
-
-    const header=document.createElement('div');
-    header.style=`background:${sec.color};color:#fff;padding:8px 14px;font-size:13px;font-weight:700`;
-    header.textContent=sec.name;
-    block.appendChild(header);
-
-    repItems.forEach(item=>{
-      const s=myStickers[String(item.id)];
-      const reps=s.repeated_count||0;
-      const numLabel=String(item.id).includes('-')?item.id.split('-')[1]:item.id;
-      const labelClean=item.label.includes('-')?item.label.split('-')[1]:item.label;
-
-      const row=document.createElement('div');
-      row.style='display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #f5f5f0';
-      row.innerHTML=`
-        <div>
-          <span style="font-size:13px;font-weight:700;color:#111">#${numLabel}</span>
-          <span style="font-size:12px;color:#aaa;margin-left:6px">${labelClean}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:12px;color:#7a5c00;background:#fffbea;padding:3px 10px;border-radius:20px;font-weight:700">x${reps+1} (${reps} extra)</span>
-          <div style="display:flex;gap:4px">
-            <button onclick="changeRep('${item.id}',1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #1a4d2e;background:#fff;color:#1a4d2e;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
-            <button onclick="changeRep('${item.id}',-1)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #c0392b;background:#fff;color:#c0392b;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
-          </div>
-        </div>`;
-      block.appendChild(row);
-    });
-    list.appendChild(block);
-  });
-
-  if(totalReps===0){
-    list.innerHTML=`<div class="empty-state">${T('no_reps')}</div>`;
-  }
-}
-
-async function changeRep(id,delta){
-  const s=myStickers[String(id)];
-  if(!s||!s.have)return;
-  const current=s.repeated_count||0;
-  const newReps=Math.max(0,current+delta);
-  await saveSticker(id,true,newReps);
-  if(newReps===0){
-    // ya no es repetida, quitar de la vista
-  }
-  updateStats();
-  renderRepetidas();
-}
-
-// ── Profile ───────────────────────────────────────────────────
-function openProfile(){
-  const av=document.getElementById('profile-avatar-big');
-  if(currentUser.photo_url){
-    av.innerHTML=`<img src="${currentUser.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-  } else {
-    av.textContent=currentUser.name.charAt(0).toUpperCase();
-  }
-  document.getElementById('profile-name-input').value=currentUser.name;
-  document.getElementById('profile-user-input').value=currentUser.username;
-  document.getElementById('profile-pass-input').value='';
-  document.getElementById('profile-err').style.display='none';
-  document.getElementById('profile-modal').classList.add('open');
-}
-
-function closeProfile(){document.getElementById('profile-modal').classList.remove('open');}
-
-function handlePhotoUpload(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=(ev)=>{
-    const dataUrl=ev.target.result;
-    const av=document.getElementById('profile-avatar-big');
-    av.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    av.dataset.photoUrl=dataUrl;
-  };
-  reader.readAsDataURL(file);
-}
-
-async function saveProfile(){
-  const name=document.getElementById('profile-name-input').value.trim();
-  const pass=document.getElementById('profile-pass-input').value;
-  const photoUrl=document.getElementById('profile-avatar-big').dataset.photoUrl||currentUser.photo_url||null;
-  const errEl=document.getElementById('profile-err');errEl.style.display='none';
-  if(!name){errEl.textContent=lang==='es'?'El nombre no puede estar vacío':'Name cannot be empty';errEl.style.display='block';return;}
-  if(pass.length>0&&pass.length<6){errEl.textContent=lang==='es'?'Contraseña mín. 6 caracteres':'Password min. 6 characters';errEl.style.display='block';return;}
-  const btn=document.getElementById('lbl-save-btn');btn.disabled=true;
-  try {
-    const{error}=await sb.from('users').update({name,photo_url:photoUrl}).eq('id',currentUser.id);
-    if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';btn.disabled=false;return;}
-    if(pass.length>=4){
-      const{error:passErr}=await sb.from('users').update({password:pass}).eq('id',currentUser.id);
-      if(passErr){errEl.textContent='Error al cambiar contraseña: '+passErr.message;errEl.style.display='block';btn.disabled=false;return;}
-    }
-    currentUser={...currentUser,name,photo_url:photoUrl};
-    const headerAv=document.getElementById('header-avatar');
-    if(currentUser.photo_url){
-      headerAv.innerHTML=`<img src="${currentUser.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    } else {
-      headerAv.innerHTML='';headerAv.textContent=currentUser.name.charAt(0).toUpperCase();
-    }
-    document.getElementById('header-greeting').textContent=T('hello')+currentUser.name.split(' ')[0];
-    showToast(lang==='es'?'Perfil actualizado ✓':'Profile updated ✓');
-    closeProfile();
-    if(document.getElementById('tab-grupo').style.display!=='none')renderMembers();
-  } catch(e){
-    errEl.textContent='Error: '+e.message;errEl.style.display='block';
-  }
-  btn.disabled=false;
-}
-
-document.getElementById('profile-modal').addEventListener('click',function(e){if(e.target===this)closeProfile();});
-
+// ── INVITE ────────────────────────────────────────────────────
 function copyLink(){
-  const url=window.location.href;
-  navigator.clipboard.writeText(url).then(()=>showToast('Link copiado ✓')).catch(()=>{
-    prompt('Copia este link:',url);
-  });
+  navigator.clipboard.writeText(window.location.href).then(()=>toast('Link copiado ✓')).catch(()=>prompt('Copia este link:',window.location.href));
 }
 
-// ── i18n ─────────────────────────────────────────────────────
-const I18N={
-  es:{
-    app_sub:'Tracker de estampas · 998 figuras · en tiempo real',
-    welcome:'Bienvenido',welcome_sub:'Inicia sesión para ver tu colección',
-    label_user:'Usuario',label_pass:'Contraseña',label_name:'Tu nombre',
-    label_confirm:'Confirmar contraseña',
-    login_btn:'Entrar',reg_btn:'Crear cuenta',
-    no_account:'¿No tienes cuenta? Regístrate',
-    have_account:'¿Ya tienes cuenta? Inicia sesión',
-    create_title:'Crear cuenta',create_sub:'Únete al grupo de intercambio',
-    err_fields:'Completa todos los campos (contraseña mín. 4 caracteres)',
-    err_match:'Las contraseñas no coinciden',err_exists:'Ese usuario ya existe',
-    err_login:'Usuario o contraseña incorrectos',
-    loading:'Cargando tu colección...',
-    tab_album:'Mi álbum',tab_reps:'Repetidas',tab_group:'Grupo',
-    tab_trades:'Cambios',tab_invite:'Invitar',
-    stat_have:'Tengo',stat_missing:'Faltan',stat_reps:'Repetidas',
-    progress:'Progreso del álbum',
-    filter_all:'Todos',filter_incomplete:'Incompletos',filter_complete:'Completos',
-    specials:'Secciones especiales',teams:'Equipos',
-    group_label:'Grupo',page_label:'p.',
-    legend_no:'No tengo',legend_have:'Tengo (1 tap)',legend_rep:'Repetida (2+ taps)',
-    tip:'1 tap = tengo · 2° tap = repetida · más taps = más repetidas · × para borrar',
-    mark_all:'✓ Marcar todas',unmark_all:'✗ Quitar todas',done:'Listo',
-    members:'Miembros del grupo',view_col:'Ver colección',view_trades:'Ver intercambios',
-    trades_title:'Oportunidades de intercambio',
-    trades_sub:'Tus repetidas que alguien necesita, y lo que te falta que alguien tiene de sobra.',
-    give:'Le doy',receive:'Me da',no_trades:'Sin intercambios posibles aún.\nMarca tus repetidas y pide a tus amigos que hagan lo mismo.',
-    no_members:'Ningún amigo se ha unido aún.',
-    reps_title:'Mis repetidas',reps_sub:'+ sube el contador · − baja (si llega a 0 desaparece)',
-    no_reps:'No tienes estampas repetidas aún.',extra:'extra',
-    invite_title:'Invitar amigos',invite_copy:'Comparte el link de la app',
-    invite_sub:'Cualquier persona que entre al link y cree su cuenta aparece automáticamente en tu grupo',
-    copy_btn:'Copiar link',how_title:'¿Cómo funciona?',
-    how_steps:'1. Comparte el link con tus amigos\n2. Ellos crean su cuenta\n3. Aparecen en tu pestaña Grupo automáticamente\n4. Puedes ver su colección y calcular intercambios en tiempo real',
-    copied:'Link copiado ✓',logout:'Salir',
-    hello:'Hola, ',stickers:' estampas',
-    give_to:'Le doy a',receives_from:'Me da',
-    no_possible:'Sin intercambios posibles aún.',
-  },
-  en:{
-    app_sub:'Sticker tracker · 998 stickers · real time',
-    welcome:'Welcome',welcome_sub:'Sign in to see your collection',
-    label_user:'Username',label_pass:'Password',label_name:'Your name',
-    label_confirm:'Confirm password',
-    login_btn:'Sign in',reg_btn:'Create account',
-    no_account:"Don't have an account? Sign up",
-    have_account:'Already have an account? Sign in',
-    create_title:'Create account',create_sub:'Join the swap group',
-    err_fields:'Fill all fields (password min. 4 characters)',
-    err_match:"Passwords don't match",err_exists:'Username already taken',
-    err_login:'Wrong username or password',
-    loading:'Loading your collection...',
-    tab_album:'My album',tab_reps:'Duplicates',tab_group:'Group',
-    tab_trades:'Swaps',tab_invite:'Invite',
-    stat_have:'Have',stat_missing:'Missing',stat_reps:'Duplicates',
-    progress:'Album progress',
-    filter_all:'All',filter_incomplete:'Incomplete',filter_complete:'Complete',
-    specials:'Special sections',teams:'Teams',
-    group_label:'Group',page_label:'p.',
-    legend_no:"Don't have",legend_have:'Have (1 tap)',legend_rep:'Duplicate (2+ taps)',
-    tip:'1 tap = have · 2nd tap = duplicate · more taps = more duplicates · × to remove',
-    mark_all:'✓ Mark all',unmark_all:'✗ Clear all',done:'Done',
-    members:'Group members',view_col:'View collection',view_trades:'View swaps',
-    trades_title:'Swap opportunities',
-    trades_sub:"Your duplicates someone needs, and what you're missing that someone has extra.",
-    give:'I give',receive:'I get',no_trades:"No swaps possible yet.\nMark your duplicates and ask your friends to do the same.",
-    no_members:'No friends have joined yet.',
-    reps_title:'My duplicates',reps_sub:'+ increase · − decrease (disappears at 0)',
-    no_reps:'No duplicate stickers yet.',extra:'extra',
-    invite_title:'Invite friends',invite_copy:'Share the app link',
-    invite_sub:'Anyone who opens the link and creates an account automatically joins your group',
-    copy_btn:'Copy link',how_title:'How does it work?',
-    how_steps:'1. Share the link with your friends\n2. They create an account\n3. They appear in your Group tab automatically\n4. You can see their collection and calculate swaps in real time',
-    copied:'Link copied ✓',logout:'Sign out',
-    hello:'Hi, ',stickers:' stickers',
-    give_to:'I give to',receives_from:'gets from me',
-    no_possible:'No swaps possible yet.',
-  }
-};
-
-let lang=localStorage.getItem('panini_lang')||'es';
-function T(key){return I18N[lang][key]||I18N['es'][key]||key;}
-
-function toggleLang(){
-  lang=lang==='es'?'en':'es';
-  localStorage.setItem('panini_lang',lang);
-  applyLang();
-}
-
-function applyLang(){
-  const es=lang==='es';
-  // Auth
-  const heroSubEl=document.getElementById('auth-hero-sub');if(heroSubEl)heroSubEl.textContent=T('app_sub');
-  // Login form
-  const setT=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
-  setT('lbl-welcome',T('welcome'));
-  setT('lbl-welcome-sub',T('welcome_sub'));
-  setT('lbl-login-user',T('label_user'));
-  setT('lbl-login-pass',T('label_pass'));
-  setT('lbl-forgot',es?'¿Olvidaste tu contraseña?':'Forgot your password?');
-  setT('login-btn',T('login_btn'));
-  setT('lbl-no-account',T('no_account'));
-  // Register form
-  setT('lbl-create-title',T('create_title'));
-  setT('lbl-create-sub',T('create_sub'));
-  setT('lbl-reg-name',T('label_name'));
-  setT('lbl-reg-user',T('label_user'));
-  setT('lbl-reg-pass',T('label_pass'));
-  setT('lbl-reg-pass2',T('label_confirm'));
-  setT('reg-btn',T('reg_btn'));
-  setT('lbl-have-account',T('have_account'));
-  // Reset form
-  setT('lbl-reset-title',es?'Restablecer contraseña':'Reset password');
-  setT('lbl-reset-sub',es?'Ingresa tu usuario y tu nueva contraseña':'Enter your username and new password');
-  setT('lbl-reset-user',T('label_user'));
-  setT('lbl-reset-pass',es?'Nueva contraseña':'New password');
-  setT('lbl-reset-pass2',T('label_confirm'));
-  setT('reset-btn',es?'Cambiar contraseña':'Change password');
-  setT('lbl-back-login',es?'← Volver al inicio de sesión':'← Back to sign in');
-  // Tabs
-  const tabs=document.querySelectorAll('.tab');
-  const tabKeys=['tab_album','tab_reps','tab_group','tab_trades','tab_invite'];
-  tabs.forEach((t,i)=>{if(tabKeys[i])t.textContent=T(tabKeys[i]);});
-  // Logout
-  const lb=document.getElementById('logout-btn');if(lb)lb.textContent=T('logout');
-  // Lang btns
-  const lbtn=document.getElementById('lang-btn');if(lbtn)lbtn.textContent=es?'🇲🇽':'🇺🇸';
-  const albtn=document.getElementById('auth-lang-btn');if(albtn)albtn.textContent=es?'🇲🇽 ES':'🇺🇸 EN';
-  // Stats labels
-  const sl=document.querySelectorAll('.stat-label');
-  if(sl[0])sl[0].textContent=T('stat_have');
-  if(sl[1])sl[1].textContent=T('stat_missing');
-  if(sl[2])sl[2].textContent=T('stat_reps');
-  // Progress
-  const pt=document.querySelector('.progress-top span');if(pt)pt.textContent=T('progress');
-  // Filter buttons
-  const fbs=document.querySelectorAll('.filter-btn');
-  if(fbs[0])fbs[0].textContent=T('filter_all');
-  if(fbs[1])fbs[1].textContent=T('filter_incomplete');
-  if(fbs[2])fbs[2].textContent=T('filter_complete');
-  // Modal buttons
-  const brs=document.querySelectorAll('.btn-row .btn-sm');
-  if(brs[0])brs[0].textContent=T('mark_all');
-  if(brs[1])brs[1].textContent=T('unmark_all');
-  if(brs[2])brs[2].textContent=T('done');
-  // Legend
-  const legs=document.querySelectorAll('.leg-item');
-  if(legs[0])legs[0].querySelector('span')||legs[0].childNodes[1]&&(legs[0].childNodes[1].textContent=' '+T('legend_no'));
-  const legTexts=document.querySelectorAll('.leg-item');
-  legTexts.forEach((l,i)=>{
-    const txt=l.childNodes[l.childNodes.length-1];
-    if(txt&&txt.nodeType===3){
-      if(i===0)txt.textContent=' '+T('legend_no');
-      if(i===1)txt.textContent=' '+T('legend_have');
-      if(i===2)txt.textContent=' '+T('legend_rep');
-    }
-  });
-  // Tip text
-  const tip=document.querySelector('.modal-body p');if(tip)tip.textContent=T('tip');
-  // Section labels with IDs
-  const ids_map={
-    'lbl-members':T('members'),
-    'lbl-trades-title':T('trades_title'),
-    'lbl-trades-sub':T('trades_sub'),
-    'lbl-reps-title':T('reps_title'),
-    'lbl-reps-sub':T('reps_sub'),
-    'lbl-invite-title':T('invite_title'),
-    'lbl-invite-copy':T('invite_copy'),
-    'lbl-invite-sub':T('invite_sub'),
-    'lbl-copy-btn':T('copy_btn'),
-    'lbl-how-title':T('how_title'),
-    'lbl-profile-title':es?'Mi perfil':'My profile',
-    'lbl-photo-hint':es?'Toca para cambiar foto':'Tap to change photo',
-    'lbl-profile-newpass':es?'Nueva contraseña':'New password',
-    'lbl-save-btn':es?'Guardar cambios':'Save changes',
-  };
-  Object.entries(ids_map).forEach(([id,txt])=>{
-    const el=document.getElementById(id);if(el)el.textContent=txt;
-  });
-  // Profile labels
-  const pnl=document.getElementById('lbl-profile-name');if(pnl)pnl.textContent=T('label_name');
-  const pul=document.getElementById('lbl-profile-user');if(pul)pul.textContent=T('label_user');
-  // How steps with HTML
-  const howStepsEl=document.getElementById('lbl-how-steps');
-  if(howStepsEl){
-    const steps=T('how_steps').split('\n');
-    howStepsEl.innerHTML=steps.map(s=>`${s}<br>`).join('');
-  }
-  // Header greeting
-  if(currentUser){
-    document.getElementById('header-greeting').textContent=T('hello')+currentUser.name.split(' ')[0];
-  }
-  // Re-render dynamic tabs
-  if(document.getElementById('tab-repetidas')?.style.display!=='none')renderRepetidas();
-  if(document.getElementById('tab-grupo')?.style.display!=='none')renderMembers();
-  if(document.getElementById('tab-intercambios')?.style.display!=='none')renderTrades();
-  if(document.getElementById('tab-mi-album')?.style.display!=='none')renderCountryGrid();
-}
-
-// ── Events ───────────────────────────────────────────────────
-document.getElementById('country-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
-document.getElementById('member-modal').addEventListener('click',function(e){if(e.target===this)closeMemberModal();});
+// ── EVENTS ────────────────────────────────────────────────────
+document.getElementById('team-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('member-modal').addEventListener('click',function(e){if(e.target===this)document.getElementById('member-modal').classList.remove('open');});
 document.addEventListener('keydown',e=>{
   if(e.key!=='Enter')return;
-  if(document.getElementById('login-form').style.display!=='none')doLogin();
-  else if(document.getElementById('register-form').style.display!=='none')doRegister();
+  if(document.getElementById('form-login').style.display!=='none')doLogin();
+  else if(document.getElementById('form-register').style.display!=='none')doRegister();
 });
 
-// ── Init ─────────────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────
 (async()=>{
-  try { applyLang(); } catch(e){ console.warn('applyLang:',e); }
   hideLoading();
+  document.getElementById('screen-auth').classList.add('active');
   try {
     const savedId=localStorage.getItem('panini_uid');
     if(savedId){
-      setLoading(T('loading'));
+      setLoading('Cargando...');
       const{data,error}=await sb.from('users').select('*').eq('id',savedId).maybeSingle();
       if(data&&!error){
-        currentUser={id:data.id,username:data.username,name:data.name,photo_url:data.photo_url||null};
-        await loadAndShowMain();
+        me={id:data.id,username:data.username,name:data.name,photo_url:data.photo_url||null};
+        await loadMain();
         return;
       }
       localStorage.removeItem('panini_uid');
       hideLoading();
     }
   } catch(e){
-    console.error('Auto-login error:',e);
-    localStorage.removeItem('panini_uid');
+    console.error(e);
     hideLoading();
   }
 })();
