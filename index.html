@@ -161,6 +161,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <div id="screen-auth">
+  <button id="auth-lang-btn" onclick="toggleLang()" style="position:fixed;top:14px;right:14px;z-index:10;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);border-radius:20px;padding:6px 14px;cursor:pointer;font-size:13px;color:#fff;font-weight:700">🇲🇽 ES</button>
   <div class="auth-card">
     <div class="auth-logo">
       <div class="auth-logo-badge">⚽ Panini WC 2026</div>
@@ -168,34 +169,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
 
     <div id="form-login">
-      <div class="form-title">Bienvenido</div>
-      <div class="form-sub">Inicia sesión para ver tu colección</div>
-      <div class="field"><label>Usuario</label><input id="login-user" placeholder="ej. stephan" autocomplete="username"></div>
-      <div class="field"><label>Contraseña</label>
+      <div class="form-title" id="ft-welcome">Bienvenido</div>
+      <div class="form-sub" id="ft-welcome-sub">Inicia sesión para ver tu colección</div>
+      <div class="field"><label id="lbl-login-user">Usuario</label><input id="login-user" placeholder="ej. stephan" autocomplete="username"></div>
+      <div class="field"><label id="lbl-login-pass">Contraseña</label>
         <div class="pass-wrap"><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password">
         <button class="eye-btn" type="button" onclick="togglePass('login-pass',this)" tabindex="-1">👁</button></div>
       </div>
       <div id="login-err" class="err-msg">Usuario o contraseña incorrectos</div>
       <button class="btn-main" id="login-btn" onclick="doLogin()">Entrar</button>
-      <button class="btn-link" onclick="showForm('register')">¿No tienes cuenta? Regístrate</button>
+      <button class="btn-link" id="lbl-no-account" onclick="showForm('register')">¿No tienes cuenta? Regístrate</button>
     </div>
 
     <div id="form-register" style="display:none">
-      <div class="form-title">Crear cuenta</div>
-      <div class="form-sub">Únete al grupo de intercambio</div>
-      <div class="field"><label>Tu nombre</label><input id="reg-name" placeholder="ej. Stephan"></div>
-      <div class="field"><label>Usuario</label><input id="reg-user" placeholder="ej. stephan"></div>
-      <div class="field"><label>Contraseña</label>
+      <div class="form-title" id="ft-create">Crear cuenta</div>
+      <div class="form-sub" id="ft-create-sub">Únete al grupo de intercambio</div>
+      <div class="field"><label id="lbl-reg-name">Tu nombre</label><input id="reg-name" placeholder="ej. Stephan"></div>
+      <div class="field"><label id="lbl-reg-user">Usuario</label><input id="reg-user" placeholder="ej. stephan"></div>
+      <div class="field"><label id="lbl-reg-pass">Contraseña</label>
         <div class="pass-wrap"><input id="reg-pass" type="password" placeholder="Mínimo 4 caracteres">
         <button class="eye-btn" type="button" onclick="togglePass('reg-pass',this)" tabindex="-1">👁</button></div>
       </div>
-      <div class="field"><label>Confirmar contraseña</label>
+      <div class="field"><label id="lbl-reg-pass2">Confirmar contraseña</label>
         <div class="pass-wrap"><input id="reg-pass2" type="password" placeholder="Repite tu contraseña">
         <button class="eye-btn" type="button" onclick="togglePass('reg-pass2',this)" tabindex="-1">👁</button></div>
       </div>
       <div id="reg-err" class="err-msg"></div>
       <button class="btn-main" id="reg-btn" onclick="doRegister()">Crear cuenta</button>
-      <button class="btn-link" onclick="showForm('login')">¿Ya tienes cuenta? Inicia sesión</button>
+      <button class="btn-link" id="lbl-have-account" onclick="showForm('login')">¿Ya tienes cuenta? Inicia sesión</button>
     </div>
   </div>
 </div>
@@ -208,8 +209,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="header-right">
       <span class="sync-dot" id="sync-dot"></span>
+      <button id="main-lang-btn" onclick="toggleLang()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:12px;padding:4px 10px;border-radius:20px;cursor:pointer;font-weight:600">🇲🇽</button>
       <div class="avatar" id="header-av" onclick="alert('Perfil próximamente')">S</div>
-      <button class="btn-logout" onclick="doLogout()">Salir</button>
+      <button class="btn-logout" id="logout-btn" onclick="doLogout()">Salir</button>
     </div>
   </div>
   <div class="tabs">
@@ -247,17 +249,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div id="tab-cambios" class="content" style="display:none">
-    <p style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.5">Tus repetidas que alguien necesita, y lo que te falta que alguien tiene de sobra.</p>
+    <p id="trades-sub" style="font-size:13px;color:#888;margin-bottom:16px;line-height:1.5">Tus repetidas que alguien necesita, y lo que te falta que alguien tiene de sobra.</p>
     <div id="trades-list"></div>
   </div>
 
   <div id="tab-invitar" class="content" style="display:none">
     <div class="invite-box">
-      <h3>🔗 Invita a tus amigos</h3>
-      <div class="invite-sub">Comparte el link de la app. Cualquier persona que cree una cuenta aparece en tu grupo automáticamente.</div>
-      <button class="btn-copy" onclick="copyLink()">Copiar link</button>
+      <h3 id="invite-title">🔗 Invita a tus amigos</h3>
+      <div id="invite-sub" class="invite-sub">Comparte el link de la app. Cualquier persona que cree una cuenta aparece en tu grupo automáticamente.</div>
+      <button id="copy-btn" class="btn-copy" onclick="copyLink()">Copiar link</button>
     </div>
-    <div style="background:#fff;border-radius:12px;padding:14px;border:1.5px solid #e2dff0;font-size:13px;color:#888;line-height:1.8">
+    <div style="background:#fff;border-radius:12px;padding:14px;border:1.5px solid #e2dff0;font-size:13px;color:#888;line-height:1.8" id="invite-how">
       1. Comparte el link con tus amigos<br>
       2. Ellos crean su cuenta<br>
       3. Aparecen en tu pestaña <strong style="color:#333">Grupo</strong><br>
@@ -694,6 +696,146 @@ document.addEventListener('keydown',e=>{
   if(document.getElementById('form-login').style.display!=='none')doLogin();
   else if(document.getElementById('form-register').style.display!=='none')doRegister();
 });
+
+// ── I18N ──────────────────────────────────────────────────────
+const T={
+  es:{
+    welcome:'Bienvenido',welcome_sub:'Inicia sesión para ver tu colección',
+    username:'Usuario',password:'Contraseña',
+    login_btn:'Entrar',no_account:'¿No tienes cuenta? Regístrate',
+    create:'Crear cuenta',create_sub:'Únete al grupo de intercambio',
+    your_name:'Tu nombre',confirm_pass:'Confirmar contraseña',
+    pass_min:'Mínimo 4 caracteres',pass_confirm:'Repite tu contraseña',
+    reg_btn:'Crear cuenta',have_account:'¿Ya tienes cuenta? Inicia sesión',
+    login_err:'Usuario o contraseña incorrectos',
+    loading:'Cargando tu colección...',logout:'Salir',
+    hello:'Hola, ',
+    tab_album:'Mi álbum',tab_reps:'Repetidas',tab_group:'Grupo',tab_trades:'Cambios',tab_invite:'Invitar',
+    stat_have:'Tengo',stat_missing:'Faltan',stat_reps:'Repetidas',
+    progress:'Progreso del álbum',
+    filter_all:'Todos',filter_inc:'Incompletos',filter_comp:'Completos',
+    specials:'Secciones especiales',teams:'Equipos',
+    no_have:'No tengo',have_1:'Tengo (1 tap)',rep_2:'Repetida (2+ taps)',
+    tip:'× para quitar',mark_all:'✓ Marcar todas',unmark:'✗ Quitar todas',done:'Listo',
+    no_reps:'No tienes estampas repetidas aún.',
+    no_members:'Nadie más se ha registrado aún.',
+    no_friends:'Ningún amigo se ha unido aún.',
+    no_trades:'Sin intercambios posibles aún.\nMarca tus repetidas primero.',
+    no_possible:'Sin intercambios posibles aún.',
+    give:'Le doy',receive:'Me da',
+    view_col:'Ver colección',view_trades:'Ver intercambios',
+    trades_sub:'Tus repetidas que alguien necesita, y lo que te falta que alguien tiene de sobra.',
+    invite_title:'Invita a tus amigos',
+    invite_sub:'Comparte el link de la app. Cualquier persona que cree una cuenta aparece en tu grupo automáticamente.',
+    copy_link:'Copiar link',copied:'Link copiado ✓',
+    how:'1. Comparte el link con tus amigos\n2. Ellos crean su cuenta\n3. Aparecen en tu pestaña Grupo\n4. Calculan intercambios automáticamente',
+    extra:'extra',stickers:'estampas',reps_lbl:'repetidas',
+  },
+  en:{
+    welcome:'Welcome',welcome_sub:'Sign in to see your collection',
+    username:'Username',password:'Password',
+    login_btn:'Sign in',no_account:"Don't have an account? Sign up",
+    create:'Create account',create_sub:'Join the swap group',
+    your_name:'Your name',confirm_pass:'Confirm password',
+    pass_min:'Minimum 4 characters',pass_confirm:'Repeat your password',
+    reg_btn:'Create account',have_account:'Already have an account? Sign in',
+    login_err:'Wrong username or password',
+    loading:'Loading your collection...',logout:'Sign out',
+    hello:'Hi, ',
+    tab_album:'My album',tab_reps:'Duplicates',tab_group:'Group',tab_trades:'Swaps',tab_invite:'Invite',
+    stat_have:'Have',stat_missing:'Missing',stat_reps:'Duplicates',
+    progress:'Album progress',
+    filter_all:'All',filter_inc:'Incomplete',filter_comp:'Complete',
+    specials:'Special sections',teams:'Teams',
+    no_have:"Don't have",have_1:'Have (1 tap)',rep_2:'Duplicate (2+ taps)',
+    tip:'× to remove',mark_all:'✓ Mark all',unmark:'✗ Clear all',done:'Done',
+    no_reps:'No duplicate stickers yet.',
+    no_members:'No one else has registered yet.',
+    no_friends:'No friends have joined yet.',
+    no_trades:"No swaps possible yet.\nMark your duplicates first.",
+    no_possible:'No swaps possible yet.',
+    give:'I give',receive:'I get',
+    view_col:'View collection',view_trades:'View swaps',
+    trades_sub:"Your duplicates someone needs, and what you're missing that someone has extra.",
+    invite_title:'Invite your friends',
+    invite_sub:'Share the app link. Anyone who creates an account automatically joins your group.',
+    copy_link:'Copy link',copied:'Link copied ✓',
+    how:'1. Share the link with your friends\n2. They create an account\n3. They appear in your Group tab\n4. Swaps are calculated automatically',
+    extra:'extra',stickers:'stickers',reps_lbl:'duplicates',
+  }
+};
+
+let lang=localStorage.getItem('panini_lang')||'es';
+function t(k){return T[lang][k]||T.es[k]||k;}
+
+function toggleLang(){
+  lang=lang==='es'?'en':'es';
+  localStorage.setItem('panini_lang',lang);
+  applyLang();
+}
+
+function applyLang(){
+  const es=lang==='es';
+  const flag=es?'🇲🇽':'🇺🇸';
+  const lbl=document.getElementById('auth-lang-btn');if(lbl)lbl.textContent=flag+' '+(es?'ES':'EN');
+  const mlb=document.getElementById('main-lang-btn');if(mlb)mlb.textContent=flag;
+  // Auth
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  const setph=(id,v)=>{const el=document.getElementById(id);if(el)el.placeholder=v;};
+  set('ft-welcome',t('welcome'));set('ft-welcome-sub',t('welcome_sub'));
+  set('lbl-login-user',t('username'));set('lbl-login-pass',t('password'));
+  set('login-btn',t('login_btn'));set('lbl-no-account',t('no_account'));
+  set('login-err',t('login_err'));
+  setph('login-user',es?'ej. stephan':'e.g. stephan');
+  set('ft-create',t('create'));set('ft-create-sub',t('create_sub'));
+  set('lbl-reg-name',t('your_name'));set('lbl-reg-user',t('username'));
+  set('lbl-reg-pass',t('password'));set('lbl-reg-pass2',t('confirm_pass'));
+  setph('reg-name',es?'ej. Stephan':'e.g. Stephan');
+  setph('reg-pass',t('pass_min'));setph('reg-pass2',t('pass_confirm'));
+  set('reg-btn',t('reg_btn'));set('lbl-have-account',t('have_account'));
+  // Tabs
+  const tabs=document.querySelectorAll('.tab');
+  const tk=['tab_album','tab_reps','tab_group','tab_trades','tab_invite'];
+  tabs.forEach((tb,i)=>{if(tk[i])tb.textContent=t(tk[i]);});
+  // Logout
+  set('logout-btn',t('logout'));
+  // Stats
+  const sl=document.querySelectorAll('.stat-label');
+  if(sl[0])sl[0].textContent=t('stat_have');
+  if(sl[1])sl[1].textContent=t('stat_missing');
+  if(sl[2])sl[2].textContent=t('stat_reps');
+  // Progress
+  const pp=document.querySelector('.progress-top span');if(pp)pp.textContent=t('progress');
+  // Filters
+  const fbs=document.querySelectorAll('.filter-btn');
+  if(fbs[0])fbs[0].textContent=t('filter_all');
+  if(fbs[1])fbs[1].textContent=t('filter_inc');
+  if(fbs[2])fbs[2].textContent=t('filter_comp');
+  // Modal buttons
+  const brs=document.querySelectorAll('.btn-row .btn-sm');
+  if(brs[0])brs[0].textContent=t('mark_all');
+  if(brs[1])brs[1].textContent=t('unmark');
+  if(brs[2])brs[2].textContent=t('done');
+  // Legend
+  const legs=document.querySelectorAll('.leg');
+  if(legs[0]){const tx=legs[0].childNodes[legs[0].childNodes.length-1];if(tx&&tx.nodeType===3)tx.textContent=' '+t('no_have');}
+  if(legs[1]){const tx=legs[1].childNodes[legs[1].childNodes.length-1];if(tx&&tx.nodeType===3)tx.textContent=' '+t('have_1');}
+  if(legs[2]){const tx=legs[2].childNodes[legs[2].childNodes.length-1];if(tx&&tx.nodeType===3)tx.textContent=' '+t('rep_2');}
+  // Tip
+  const tip=document.querySelector('.modal-body p');if(tip)tip.textContent=t('tip');
+  // Invite tab
+  set('invite-title',t('invite_title'));
+  set('invite-sub',t('invite_sub'));
+  set('copy-btn',t('copy_link'));
+  const hw=document.getElementById('invite-how');
+  if(hw)hw.innerHTML=t('how').split('\n').map(s=>s+'<br>').join('');
+  // Trades sub
+  set('trades-sub',t('trades_sub'));
+  // Re-render if tabs visible
+  if(document.getElementById('tab-repetidas')?.style.display!=='none')renderReps();
+  if(document.getElementById('tab-grupo')?.style.display!=='none')renderMembers();
+  if(document.getElementById('tab-cambios')?.style.display!=='none')renderTrades();
+}
 
 // ── INIT ──────────────────────────────────────────────────────
 (async()=>{
