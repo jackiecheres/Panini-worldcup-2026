@@ -1218,9 +1218,8 @@ function toggleLang(){
 
 function applyLang(){
   const es=lang==='es';
-  // Auth hero
+  // Auth
   const heroSubEl=document.getElementById('auth-hero-sub');if(heroSubEl)heroSubEl.textContent=T('app_sub');
-  const alb=document.getElementById('auth-lang-btn');if(alb)alb.textContent=es?'🇲🇽 ES':'🇺🇸 EN';
   // Login form
   const setT=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
   setT('lbl-welcome',T('welcome'));
@@ -1253,8 +1252,9 @@ function applyLang(){
   tabs.forEach((t,i)=>{if(tabKeys[i])t.textContent=T(tabKeys[i]);});
   // Logout
   const lb=document.getElementById('logout-btn');if(lb)lb.textContent=T('logout');
-  // Lang btn
-  document.getElementById('lang-btn').textContent=es?'🇲🇽':'🇺🇸';
+  // Lang btns
+  const lbtn=document.getElementById('lang-btn');if(lbtn)lbtn.textContent=es?'🇲🇽':'🇺🇸';
+  const albtn=document.getElementById('auth-lang-btn');if(albtn)albtn.textContent=es?'🇲🇽 ES':'🇺🇸 EN';
   // Stats labels
   const sl=document.querySelectorAll('.stat-label');
   if(sl[0])sl[0].textContent=T('stat_have');
