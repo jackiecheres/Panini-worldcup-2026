@@ -530,7 +530,7 @@ function renderStickers(){
     const n=openSpecial?null:parseInt(item.id.split('-')[1]);
     const numLabel=openSpecial?item.id:(openTeam.code+'-'+n);
     const tagLabel=openSpecial?item.label:(n===1?'Escudo':'');
-    btn.innerHTML=`<span class="s-num">${numLabel}</span><span class="s-tag">${tagLabel}</span><span class="s-tag">${have?(reps>0?'x'+(reps+1):'✓'):''}</span>`;
+    btn.innerHTML=`<span class="s-num">${numLabel}</span>${tagLabel?`<span class="s-tag">${tagLabel}</span>`:''}<span class="s-tag">${have?(reps>0?'x'+(reps+1):'✓'):''}</span>`;
     if(reps>0){const x=document.createElement('span');x.className='del-x';x.textContent='×';x.onclick=(e)=>{e.stopPropagation();onDelete(item.id,btn);};btn.appendChild(x);}
     btn.onclick=()=>cycleSticker(item.id,btn);
     g.appendChild(btn);
