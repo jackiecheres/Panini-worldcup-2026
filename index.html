@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panini FIFA World Cup 2026 — Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;min-height:100vh;color:#1a1a1a}
+.app{min-height:100vh}
+.screen{display:none}.screen.active{display:block}
+
+.auth-wrap{max-width:400px;margin:0 auto;padding:3rem 1.5rem}
+.logo{text-align:center;margin-bottom:2.5rem}
+.logo-badge{display:inline-flex;align-items:center;gap:10px;background:#1a4d2e;color:#fff;padding:12px 24px;border-radius:14px;font-size:16px;font-weight:600}
+.logo-badge .ball{font-size:26px}
+.logo-sub{font-size:13px;color:#888;margin-top:10px}
+.card{background:#fff;border-radius:16px;padding:1.75rem;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+h1.title{font-size:22px;font-weight:700;color:#111;margin-bottom:.25rem;letter-spacing:-.03em}
+p.sub{font-size:14px;color:#888;margin-bottom:1.5rem}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-group input{width:100%;padding:10px 14px;font-size:14px;border:1.5px solid #e5e5e5;border-radius:10px;background:#fff;color:#111;transition:border-color .15s;outline:none}
+.form-group input:focus{border-color:#1a4d2e}
+.pass-wrap{position:relative}
+.pass-wrap input{padding-right:42px}
+.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#aaa;font-size:16px;padding:0;line-height:1}
+.btn-primary{width:100%;padding:12px;background:#1a4d2e;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;transition:background .15s}
+.btn-primary:hover{background:#133d23}
+.btn-primary:disabled{background:#aaa;cursor:not-allowed}
+.btn-link{background:none;border:none;color:#1a4d2e;font-size:13px;cursor:pointer;text-decoration:underline;margin-top:14px;display:block;text-align:center}
+.err{font-size:13px;color:#c0392b;margin-top:6px;display:none;background:#fdf0f0;padding:8px 12px;border-radius:8px}
+
+.loading-screen{position:fixed;inset:0;background:#f5f5f0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
+.loading-screen.hidden{display:none}
+.spinner{width:36px;height:36px;border:3px solid #e5e5e5;border-top-color:#1a4d2e;border-radius:50%;animation:spin .7s linear infinite;margin-bottom:14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen p{font-size:14px;color:#999}
+
+.main-header{background:#1a4d2e;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.header-left h2{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.header-left p{font-size:12px;opacity:.65;margin-top:1px}
+.user-pill{display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;border:1.5px solid rgba(255,255,255,.3)}
+.logout-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:12px;padding:5px 12px;border-radius:20px;cursor:pointer;font-weight:500}
+.logout-btn:hover{background:rgba(255,255,255,.25)}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block}
+.sync-dot.syncing{background:#ff9800;animation:pulse .8s infinite}
+.sync-dot.error{background:#f44336}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.tabs{display:flex;border-bottom:1px solid #e8e8e5;background:#fff;position:sticky;top:62px;z-index:40}
+.tab{flex:1;padding:12px 4px;font-size:13px;border:none;background:none;cursor:pointer;color:#999;border-bottom:2px solid transparent;transition:all .15s;font-weight:500}
+.tab.active{color:#1a4d2e;border-bottom-color:#1a4d2e;font-weight:700}
+.content{padding:20px;max-width:800px;margin:0 auto}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:12px;padding:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.stat-num{font-size:26px;font-weight:800;color:#111;letter-spacing:-.04em}
+.stat-label{font-size:11px;color:#999;margin-top:3px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.progress-bar-wrap{background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.progress-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px}
+.progress-top span:first-child{font-weight:700;color:#111}
+.progress-top span:last-child{color:#888;font-weight:500}
+.progress-track{height:10px;background:#f0f0ea;border-radius:5px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#1a4d2e,#2d7a4f);border-radius:5px;transition:width .4s ease}
+
+.filter-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.filter-btn{padding:6px 14px;border-radius:20px;border:1.5px solid #e5e5e5;background:#fff;font-size:12px;cursor:pointer;color:#888;font-weight:500;transition:all .15s}
+.filter-btn.active{background:#1a4d2e;color:#fff;border-color:#1a4d2e}
+.section-label{font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+
+.country-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.country-card{border:1.5px solid #ebebeb;border-radius:12px;padding:12px 14px;cursor:pointer;background:#fff;transition:all .15s}
+.country-card:hover{border-color:#1a4d2e;box-shadow:0 2px 8px rgba(26,77,46,.12)}
+.country-card.complete{border-color:#2d7a4f;background:#f4faf5}
+.country-name{font-size:13px;font-weight:700;color:#111;margin-bottom:2px}
+.country-group{font-size:11px;color:#bbb;margin-bottom:6px;font-weight:500}
+.country-mini-progress{height:4px;background:#f0f0ea;border-radius:2px;overflow:hidden;margin-bottom:5px}
+.country-mini-fill{height:100%;background:#2d7a4f;border-radius:2px;transition:width .3s}
+.country-count{font-size:11px;color:#999;font-weight:500}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:20px;width:100%;max-width:560px;overflow:hidden;display:flex;flex-direction:column;max-height:90vh}
+.modal-head{padding:16px 20px;border-bottom:1px solid #f0f0ea;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:10}
+.modal-head h3{font-size:17px;font-weight:800;letter-spacing:-.03em}
+.close-btn{background:#f5f5f0;border:none;font-size:18px;cursor:pointer;color:#888;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.close-btn:hover{background:#eaeae5}
+.modal-body{padding:18px 20px;overflow-y:auto;flex:1}
+
+.sticker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:7px;margin-bottom:16px}
+.sticker-btn{border:1.5px solid #ebebeb;border-radius:9px;padding:7px 3px;text-align:center;cursor:pointer;font-size:11px;background:#fff;color:#aaa;user-select:none;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .1s;-webkit-tap-highlight-color:transparent;position:relative}
+.sticker-btn:active{transform:scale(.93)}
+.sticker-btn.have{background:#f0faf2;border-color:#3a9d5a;color:#1a5c30}
+.sticker-btn.repeated{background:#fffbea;border-color:#d4a017;color:#7a5c00}
+.sticker-num{font-size:12px;font-weight:700}
+.sticker-tag{font-size:9px;opacity:.9;font-weight:600}
+.del-btn{position:absolute;top:3px;right:4px;font-size:11px;color:#b8860b;font-weight:700;cursor:pointer;opacity:.7}
+.del-btn:hover{opacity:1}
+.legend{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#888}
+.leg-dot{width:14px;height:14px;border-radius:4px;flex-shrink:0}
+.btn-row{display:flex;gap:8px;margin-top:4px}
+.btn-sm{flex:1;padding:10px;border-radius:10px;font-size:13px;cursor:pointer;border:1.5px solid #e5e5e5;background:#fff;color:#555;font-weight:600;transition:all .15s}
+.btn-sm:hover{background:#f5f5f0}
+.btn-sm.green{background:#1a4d2e;color:#fff;border-color:#1a4d2e}
+.btn-sm.green:hover{background:#133d23}
+
+.member-card{border:1.5px solid #ebebeb;border-radius:14px;padding:14px 16px;margin-bottom:10px;background:#fff}
+.member-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.member-avatar{width:40px;height:40px;border-radius:50%;background:#e8f5e0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#1a4d2e;flex-shrink:0;border:2px solid #c8e8cf}
+.member-info h4{font-size:15px;font-weight:700;color:#111}
+.member-info p{font-size:12px;color:#aaa;margin-top:2px}
+.member-progress{height:5px;background:#f0f0ea;border-radius:3px;overflow:hidden;margin-bottom:10px}
+.member-progress-fill{height:100%;background:#2d7a4f;border-radius:3px}
+.member-actions{display:flex;gap:7px;flex-wrap:wrap}
+.tag-btn{font-size:12px;padding:6px 14px;border-radius:20px;border:1.5px solid #e5e5e5;background:#f8f8f5;cursor:pointer;color:#555;font-weight:600;transition:all .15s}
+.tag-btn:hover{border-color:#1a4d2e;color:#1a4d2e}
+
+.trade-card{border:1.5px solid #ebebeb;border-radius:14px;padding:14px 16px;margin-bottom:10px;background:#fff}
+.trade-header{font-size:14px;font-weight:800;margin-bottom:10px;color:#111}
+.trade-tag{display:inline-block;background:#e8f5e0;color:#1a4d2e;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;margin:2px}
+.trade-tag.need{background:#fffbea;color:#7a5c00}
+.trade-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#bbb;margin-bottom:6px;margin-top:10px}
+
+.group-code-box{background:#f4faf5;border:1.5px solid #c8e8cf;border-radius:14px;padding:20px;text-align:center;margin-bottom:20px}
+.group-code{font-size:36px;font-weight:800;letter-spacing:.25em;color:#1a4d2e;font-family:monospace}
+.group-code-label{font-size:13px;color:#888;margin-top:6px}
+
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:11px 22px;border-radius:30px;font-size:13px;font-weight:600;display:none;z-index:300;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.25)}
+.toast.show{display:block}
+.empty-state{text-align:center;padding:2.5rem 1rem;color:#aaa;font-size:14px;line-height:1.6}
+.empty-state strong{color:#555}
+@media(max-width:480px){.country-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}.sticker-grid{grid-template-columns:repeat(auto-fill,minmax(52px,1fr))}}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading-screen">
+  <div class="spinner"></div>
+  <p id="loading-msg">Conectando...</p>
+</div>
+
+<div class="app" id="app" style="display:none">
+
+<div class="screen active" id="screen-auth">
+  <div class="auth-wrap">
+    <div class="logo">
+      <div class="logo-badge"><span class="ball">⚽</span> Panini WC 2026</div>
+      <div class="logo-sub">Tracker grupal · 998 estampas · en tiempo real</div>
+    </div>
+    <div class="card">
+      <div id="login-form">
+        <h1 class="title">Bienvenido</h1>
+        <p class="sub">Inicia sesión para ver tu colección</p>
+        <div class="form-group"><label>Usuario</label><input id="login-user" placeholder="ej. stephan" autocomplete="username"></div>
+        <div class="form-group"><label>Contraseña</label>
+          <div class="pass-wrap"><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password">
+          <button class="eye-btn" type="button" onclick="togglePass('login-pass',this)" tabindex="-1">👁</button></div>
+        </div>
+        <p class="err" id="login-err">Usuario o contraseña incorrectos</p>
+        <button class="btn-primary" id="login-btn" onclick="doLogin()">Entrar</button>
+        <button class="btn-link" onclick="showRegister()">¿No tienes cuenta? Regístrate</button>
+      </div>
+      <div id="register-form" style="display:none">
+        <h1 class="title">Crear cuenta</h1>
+        <p class="sub">Únete al grupo de intercambio</p>
+        <div class="form-group"><label>Tu nombre</label><input id="reg-name" placeholder="ej. Stephan"></div>
+        <div class="form-group"><label>Usuario</label><input id="reg-user" placeholder="ej. stephan (sin espacios)"></div>
+        <div class="form-group"><label>Contraseña</label>
+          <div class="pass-wrap"><input id="reg-pass" type="password" placeholder="Mínimo 4 caracteres">
+          <button class="eye-btn" type="button" onclick="togglePass('reg-pass',this)" tabindex="-1">👁</button></div>
+        </div>
+        <div class="form-group"><label>Confirmar contraseña</label>
+          <div class="pass-wrap"><input id="reg-pass2" type="password" placeholder="Repite tu contraseña">
+          <button class="eye-btn" type="button" onclick="togglePass('reg-pass2',this)" tabindex="-1">👁</button></div>
+        </div>
+        <p class="err" id="reg-err"></p>
+        <button class="btn-primary" id="reg-btn" onclick="doRegister()">Crear cuenta</button>
+        <button class="btn-link" onclick="showLogin()">¿Ya tienes cuenta? Inicia sesión</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="screen-main">
+  <div class="main-header">
+    <div class="header-left">
+      <p>Panini FIFA World Cup 2026</p>
+      <h2 id="header-greeting">Mi Colección</h2>
+    </div>
+    <div class="user-pill">
+      <span class="sync-dot" id="sync-dot" title="Sincronizado"></span>
+      <div class="avatar" id="header-avatar">S</div>
+      <button class="logout-btn" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('mi-album')">Mi álbum</button>
+    <button class="tab" onclick="switchTab('grupo')">Grupo</button>
+    <button class="tab" onclick="switchTab('intercambios')">Intercambios</button>
+    <button class="tab" onclick="switchTab('config')">Invitar</button>
+  </div>
+
+  <div class="tab-content" id="tab-mi-album" style="display:block">
+    <div class="content">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num" id="stat-tengo">0</div><div class="stat-label">Tengo</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-faltan">998</div><div class="stat-label">Faltan</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-repetidas">0</div><div class="stat-label">Repetidas</div></div>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-top"><span>Progreso del álbum</span><span id="stat-pct">0 / 998</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="filterCountry('todos',this)">Todos</button>
+        <button class="filter-btn" onclick="filterCountry('incompleto',this)">Incompletos</button>
+        <button class="filter-btn" onclick="filterCountry('completo',this)">Completos</button>
+      </div>
+      <div class="country-grid" id="country-grid"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-grupo" style="display:none">
+    <div class="content">
+      <div class="section-label" style="margin-bottom:14px">Miembros del grupo</div>
+      <div id="members-list"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-intercambios" style="display:none">
+    <div class="content">
+      <div class="section-label" style="margin-bottom:6px">Oportunidades de intercambio</div>
+      <p style="font-size:13px;color:#999;margin-bottom:18px;line-height:1.5">Tus repetidas que alguien necesita, y lo que te falta que alguien tiene de sobra.</p>
+      <div id="trades-list"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-config" style="display:none">
+    <div class="content">
+      <div class="section-label" style="margin-bottom:14px">Código del grupo</div>
+      <div class="group-code-box">
+        <div class="group-code">WC2026</div>
+        <div class="group-code-label">Comparte este link con tus amigos para que creen su cuenta y entren al grupo</div>
+      </div>
+      <p style="font-size:13px;color:#aaa;line-height:1.6">Todos los usuarios comparten su colección en tiempo real. Los intercambios se calculan automáticamente.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal-bg" id="country-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-country-name"></h3>
+      <button class="close-btn" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#fff;border:1.5px solid #ddd"></div>No tengo</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#f0faf2;border:1.5px solid #3a9d5a"></div>Tengo (1 tap)</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#fffbea;border:1.5px solid #d4a017"></div>Repetida (2+ taps)</div>
+      </div>
+      <p style="font-size:12px;color:#bbb;margin-bottom:12px">1 tap = tengo · 2° tap = repetida · más taps = más repetidas · × para borrar</p>
+      <div class="sticker-grid" id="sticker-grid"></div>
+      <div class="btn-row">
+        <button class="btn-sm" onclick="markAll('have')">✓ Marcar todas</button>
+        <button class="btn-sm" onclick="markAll('none')">✗ Quitar todas</button>
+        <button class="btn-sm green" onclick="closeModal()">Listo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="member-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="member-modal-title"></h3>
+      <button class="close-btn" onclick="closeMemberModal()">×</button>
+    </div>
+    <div class="modal-body" id="member-modal-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL='https://bpmgzkbxjpcgtrpbsnpi.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwbWd6a2J4anBjZ3RycGJzbnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MzY3MjEsImV4cCI6MjA5MzIxMjcyMX0.WRNIFpije_ZTO6yWfjWIslbS5mCrwf71LQrnFO5vEBE';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+const TEAMS=[
+  {name:"Argentina",group:"A",base:1},{name:"Ecuador",group:"A",base:21},
+  {name:"Nueva Zelanda",group:"A",base:41},{name:"Sudáfrica",group:"A",base:61},
+  {name:"España",group:"B",base:81},{name:"Brasil",group:"B",base:101},
+  {name:"Japón",group:"B",base:121},{name:"Arabia Saudita",group:"B",base:141},
+  {name:"Francia",group:"C",base:161},{name:"México",group:"C",base:181},
+  {name:"Bélgica",group:"C",base:201},{name:"Australia",group:"C",base:221},
+  {name:"Portugal",group:"D",base:241},{name:"Alemania",group:"D",base:261},
+  {name:"Colombia",group:"D",base:281},{name:"Costa Rica",group:"D",base:301},
+  {name:"Inglaterra",group:"E",base:321},{name:"Uruguay",group:"E",base:341},
+  {name:"Países Bajos",group:"E",base:361},{name:"Irak",group:"E",base:381},
+  {name:"EUA",group:"F",base:401},{name:"Panamá",group:"F",base:421},
+  {name:"Serbia",group:"F",base:441},{name:"Ghana",group:"F",base:461},
+  {name:"Marruecos",group:"G",base:481},{name:"Croacia",group:"G",base:501},
+  {name:"Canadá",group:"G",base:521},{name:"Chile",group:"G",base:541},
+  {name:"Italia",group:"H",base:561},{name:"Perú",group:"H",base:581},
+  {name:"Senegal",group:"H",base:601},{name:"Suiza",group:"H",base:621},
+  {name:"Turquía",group:"I",base:641},{name:"Rumania",group:"I",base:661},
+  {name:"Venezuela",group:"I",base:681},{name:"China",group:"I",base:701},
+  {name:"Austria",group:"J",base:721},{name:"Hungría",group:"J",base:741},
+  {name:"Polonia",group:"J",base:761},{name:"Bolivia",group:"J",base:781},
+  {name:"Ucrania",group:"K",base:801},{name:"Camerún",group:"K",base:821},
+  {name:"Rep. Checa",group:"K",base:841},{name:"Tanzania",group:"K",base:861},
+  {name:"Irán",group:"L",base:881},{name:"Eslovaquia",group:"L",base:901},
+  {name:"Indonesia",group:"L",base:921},{name:"Eslovenia",group:"L",base:941}
+];
+
+const SPECIALS=[
+  {id:'panini00',name:'We Are Panini',group:'Especial',
+   stickers:[{id:'00',label:'WE ARE PANINI'}]},
+  {id:'fwc-intro',name:'Introducción',group:'Especial',
+   stickers:Array.from({length:8},(_,i)=>({id:'FWC'+(i+1),label:'FWC '+(i+1)}))},
+  {id:'fwc-history',name:'FIFA WC History',group:'Especial',
+   stickers:Array.from({length:11},(_,i)=>({id:'FWC'+(i+9),label:'FWC '+(i+9)}))},
+  {id:'coca-cola',name:'Coca-Cola',group:'Especial',
+   stickers:Array.from({length:18},(_,i)=>({id:'CC'+(i+1),label:'CC '+(i+1)}))}
+];
+
+const TOTAL=998;
+const TEAM_LABELS=['Escudo','Foto','J1','J2','J3','J4','J5','J6','J7','J8','J9','J10','J11','J12','J13','J14','J15','J16','J17','J18'];
+
+let currentUser=null;
+let myStickers={};
+let allUsersStickers={};
+let allUsers=[];
+let openCountry=null;
+let openSpecial=null;
+let currentFilter='todos';
+let realtimeChannel=null;
+
+// ── UI helpers ──────────────────────────────────────────────
+function setLoading(msg){
+  document.getElementById('loading-screen').classList.remove('hidden');
+  document.getElementById('loading-msg').textContent=msg||'Cargando...';
+}
+function hideLoading(){
+  document.getElementById('loading-screen').classList.add('hidden');
+  document.getElementById('app').style.display='block';
+}
+function setSyncing(s){
+  const d=document.getElementById('sync-dot');if(!d)return;
+  d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
+  d.title=s==='syncing'?'Guardando...':(s==='error'?'Error al guardar':'Sincronizado');
+}
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── Auth ────────────────────────────────────────────────────
+function togglePass(id,btn){
+  const inp=document.getElementById(id);
+  inp.type=inp.type==='password'?'text':'password';
+  btn.style.opacity=inp.type==='text'?'0.5':'1';
+}
+function showRegister(){document.getElementById('login-form').style.display='none';document.getElementById('register-form').style.display='block';}
+function showLogin(){document.getElementById('register-form').style.display='none';document.getElementById('login-form').style.display='block';}
+
+async function doRegister(){
+  const name=document.getElementById('reg-name').value.trim();
+  const username=document.getElementById('reg-user').value.trim().toLowerCase().replace(/\s+/g,'');
+  const pass=document.getElementById('reg-pass').value;
+  const pass2=document.getElementById('reg-pass2').value;
+  const errEl=document.getElementById('reg-err');
+  errEl.style.display='none';
+  if(!name||!username||pass.length<4){errEl.textContent='Completa todos los campos (contraseña mín. 4 caracteres)';errEl.style.display='block';return;}
+  if(pass!==pass2){errEl.textContent='Las contraseñas no coinciden';errEl.style.display='block';return;}
+  const btn=document.getElementById('reg-btn');btn.disabled=true;btn.textContent='Creando cuenta...';
+  const{data:existing}=await sb.from('users').select('id').eq('username',username).maybeSingle();
+  if(existing){errEl.textContent='Ese usuario ya existe';errEl.style.display='block';btn.disabled=false;btn.textContent='Crear cuenta';return;}
+  const{data,error}=await sb.from('users').insert({username,name,password:pass}).select().single();
+  if(error||!data){errEl.textContent='Error: '+(error?.message||'intenta de nuevo');errEl.style.display='block';btn.disabled=false;btn.textContent='Crear cuenta';return;}
+  currentUser=data;
+  await loadAndShowMain();
+}
+
+async function doLogin(){
+  const username=document.getElementById('login-user').value.trim().toLowerCase();
+  const pass=document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-err');errEl.style.display='none';
+  const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Entrando...';
+  const{data,error}=await sb.from('users').select('*').eq('username',username).eq('password',pass).maybeSingle();
+  if(error||!data){errEl.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;}
+  currentUser=data;
+  await loadAndShowMain();
+}
+
+function doLogout(){
+  if(realtimeChannel)sb.removeChannel(realtimeChannel);
+  currentUser=null;myStickers={};allUsersStickers={};allUsers=[];
+  document.getElementById('screen-main').classList.remove('active');
+  document.getElementById('screen-auth').classList.add('active');
+  showLogin();
+  document.getElementById('login-btn').disabled=false;document.getElementById('login-btn').textContent='Entrar';
+  document.getElementById('login-user').value='';document.getElementById('login-pass').value='';
+}
+
+// ── Load data ───────────────────────────────────────────────
+async function loadAndShowMain(){
+  setLoading('Cargando tu colección...');
+  const[{data:mySt},{data:users},{data:allSt}]=await Promise.all([
+    sb.from('stickers').select('*').eq('user_id',currentUser.id),
+    sb.from('users').select('id,username,name'),
+    sb.from('stickers').select('*')
+  ]);
+  myStickers={};
+  (mySt||[]).forEach(s=>{myStickers[s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
+  allUsers=users||[];
+  allUsersStickers={};
+  (allSt||[]).forEach(s=>{
+    if(!allUsersStickers[s.user_id])allUsersStickers[s.user_id]={};
+    allUsersStickers[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
+  });
+  hideLoading();
+  showMain();
+  subscribeRealtime();
+}
+
+function subscribeRealtime(){
+  if(realtimeChannel)sb.removeChannel(realtimeChannel);
+  realtimeChannel=sb.channel('stickers-live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'stickers'},p=>{
+      const s=p.new||(p.eventType==='DELETE'?p.old:null);if(!s)return;
+      const val=p.eventType==='DELETE'?null:{have:s.have,repeated_count:s.repeated_count};
+      if(!allUsersStickers[s.user_id])allUsersStickers[s.user_id]={};
+      if(val)allUsersStickers[s.user_id][s.sticker_id]=val;
+      else delete allUsersStickers[s.user_id][s.sticker_id];
+      if(s.user_id===currentUser.id){
+        if(val)myStickers[s.sticker_id]=val;else delete myStickers[s.sticker_id];
+      }
+      updateStats();renderCountryGrid();
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'users'},p=>{
+      if(p.new&&!allUsers.find(u=>u.id===p.new.id)){
+        allUsers.push({id:p.new.id,username:p.new.username,name:p.new.name});
+      }
+    })
+    .subscribe();
+}
+
+function showMain(){
+  document.getElementById('screen-auth').classList.remove('active');
+  document.getElementById('screen-main').classList.add('active');
+  document.getElementById('header-avatar').textContent=currentUser.name.charAt(0).toUpperCase();
+  document.getElementById('header-greeting').textContent='Hola, '+currentUser.name.split(' ')[0];
+  switchTab('mi-album');
+  renderCountryGrid();
+  updateStats();
+}
+
+// ── Tabs ────────────────────────────────────────────────────
+function switchTab(id){
+  const ids=['mi-album','grupo','intercambios','config'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
+  document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
+  document.getElementById('tab-'+id).style.display='block';
+  if(id==='grupo')renderMembers();
+  if(id==='intercambios')renderTrades();
+}
+
+// ── Stats ────────────────────────────────────────────────────
+function updateStats(){
+  const vals=Object.values(myStickers);
+  const have=vals.filter(v=>v.have).length;
+  const reps=vals.reduce((a,v)=>a+(v.repeated_count||0),0);
+  const pct=Math.round(have/TOTAL*100);
+  document.getElementById('stat-tengo').textContent=have;
+  document.getElementById('stat-faltan').textContent=TOTAL-have;
+  document.getElementById('stat-repetidas').textContent=reps;
+  document.getElementById('stat-pct').textContent=have+' / '+TOTAL;
+  document.getElementById('progress-fill').style.width=pct+'%';
+}
+
+// ── Sticker helpers ──────────────────────────────────────────
+function getSD(id){const s=myStickers[String(id)];return{have:s?.have||false,reps:s?.repeated_count||0};}
+
+async function saveSticker(id,have,reps){
+  setSyncing('syncing');
+  const{error}=await sb.from('stickers').upsert(
+    {user_id:currentUser.id,sticker_id:String(id),have,repeated_count:reps,updated_at:new Date().toISOString()},
+    {onConflict:'user_id,sticker_id'}
+  );
+  setSyncing(error?'error':'ok');
+  if(!error){
+    myStickers[String(id)]={have,repeated_count:reps};
+    if(!allUsersStickers[currentUser.id])allUsersStickers[currentUser.id]={};
+    allUsersStickers[currentUser.id][String(id)]={have,repeated_count:reps};
+  }
+}
+
+// ── Filter & Grid ─────────────────────────────────────────────
+function filterCountry(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCountryGrid();
+}
+
+function renderCountryGrid(){
+  const grid=document.getElementById('country-grid');grid.innerHTML='';
+
+  const addLabel=(text)=>{
+    const el=document.createElement('div');
+    el.style='grid-column:1/-1;font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin:6px 0 2px';
+    el.textContent=text;grid.appendChild(el);
+  };
+  const addDivider=()=>{
+    const el=document.createElement('div');
+    el.style='grid-column:1/-1;height:1px;background:#ebebeb;margin:8px 0 4px';
+    grid.appendChild(el);
+  };
+
+  addLabel('Secciones especiales');
+  SPECIALS.forEach(sec=>{
+    const ids=sec.stickers.map(s=>s.id);
+    const have=ids.filter(id=>getSD(id).have).length;
+    const total=ids.length;const pct=Math.round(have/total*100);const complete=have===total;
+    if(currentFilter==='completo'&&!complete)return;
+    if(currentFilter==='incompleto'&&complete)return;
+    const c=document.createElement('div');c.className='country-card'+(complete?' complete':'');
+    c.style='border-color:#c8b8e8';
+    c.innerHTML=`<div class="country-name">${sec.name}</div>
+    <div class="country-group" style="color:#9b7fd4">${sec.group}</div>
+    <div class="country-mini-progress"><div class="country-mini-fill" style="width:${pct}%;background:#7c4daa"></div></div>
+    <div class="country-count">${have}/${total}${complete?' ✓':''}</div>`;
+    c.onclick=()=>openSpecialModal(sec);grid.appendChild(c);
+  });
+
+  addDivider();addLabel('Equipos');
+  TEAMS.forEach(team=>{
+    const nums=Array.from({length:20},(_,i)=>team.base+i);
+    const have=nums.filter(n=>getSD(n).have).length;
+    const pct=Math.round(have/20*100);const complete=have===20;
+    if(currentFilter==='completo'&&!complete)return;
+    if(currentFilter==='incompleto'&&complete)return;
+    const c=document.createElement('div');c.className='country-card'+(complete?' complete':'');
+    c.innerHTML=`<div class="country-name">${team.name}</div>
+    <div class="country-group">Grupo ${team.group}</div>
+    <div class="country-mini-progress"><div class="country-mini-fill" style="width:${pct}%"></div></div>
+    <div class="country-count">${have}/20${complete?' ✓':''}</div>`;
+    c.onclick=()=>openCountryModal(team);grid.appendChild(c);
+  });
+}
+
+// ── Modals ───────────────────────────────────────────────────
+function openCountryModal(team){
+  openCountry=team;openSpecial=null;
+  document.getElementById('modal-country-name').textContent=team.name+' · Grupo '+team.group;
+  renderStickerGrid();document.getElementById('country-modal').classList.add('open');
+}
+function openSpecialModal(sec){
+  openSpecial=sec;openCountry=null;
+  document.getElementById('modal-country-name').textContent=sec.name;
+  renderStickerGrid();document.getElementById('country-modal').classList.add('open');
+}
+function closeModal(){document.getElementById('country-modal').classList.remove('open');openCountry=null;openSpecial=null;}
+function closeMemberModal(){document.getElementById('member-modal').classList.remove('open');}
+
+function renderStickerGrid(){
+  const grid=document.getElementById('sticker-grid');grid.innerHTML='';
+  const items=openSpecial
+    ?openSpecial.stickers
+    :Array.from({length:20},(_,i)=>({id:openCountry.base+i,label:TEAM_LABELS[i]}));
+  items.forEach(item=>{
+    const{have,reps}=getSD(item.id);
+    grid.appendChild(buildBtn(item,have,reps));
+  });
+}
+
+function buildBtn(item,have,reps){
+  const btn=document.createElement('button');
+  btn.className='sticker-btn'+(have?' have':'')+(reps>0?' repeated':'');
+  const numLabel=openSpecial?item.id:'#'+item.id;
+  btn.innerHTML=`<span class="sticker-num">${numLabel}</span><span class="sticker-tag">${item.label}</span><span class="sticker-status">${have?(reps>0?'x'+(reps+1):'✓'):''}</span>`;
+  btn.querySelector('.sticker-status').className='sticker-tag';
+  if(reps>0)addDelBtn(btn,item.id);
+  btn.onclick=()=>cycleSticker(item.id,btn);
+  return btn;
+}
+
+function addDelBtn(btn,id){
+  const del=document.createElement('span');del.className='del-btn';del.textContent='×';
+  del.onclick=(e)=>{e.stopPropagation();onDelete(id,btn);};btn.appendChild(del);
+}
+
+async function cycleSticker(id,btn){
+  const{have,reps}=getSD(id);
+  const newHave=true;const newReps=have?reps+1:0;
+  refreshBtn(btn,newHave,newReps,id);
+  updateStats();renderCountryGrid();
+  await saveSticker(id,newHave,newReps);
+}
+
+async function onDelete(id,btn){
+  refreshBtn(btn,false,0,id);
+  updateStats();renderCountryGrid();
+  await saveSticker(id,false,0);
+}
+
+function refreshBtn(btn,have,reps,id){
+  btn.className='sticker-btn'+(have?' have':'')+(reps>0?' repeated':'');
+  const tags=btn.querySelectorAll('.sticker-tag');
+  if(tags[1])tags[1].textContent=have?(reps>0?'x'+(reps+1):'✓'):'';
+  const d=btn.querySelector('.del-btn');if(d)d.remove();
+  if(reps>0)addDelBtn(btn,id);
+}
+
+async function markAll(mode){
+  const items=openSpecial
+    ?openSpecial.stickers.map(s=>s.id)
+    :Array.from({length:20},(_,i)=>openCountry.base+i);
+  const rows=items.map(id=>({user_id:currentUser.id,sticker_id:String(id),have:mode==='have',repeated_count:0,updated_at:new Date().toISOString()}));
+  setSyncing('syncing');
+  const{error}=await sb.from('stickers').upsert(rows,{onConflict:'user_id,sticker_id'});
+  setSyncing(error?'error':'ok');
+  items.forEach(id=>{
+    myStickers[String(id)]={have:mode==='have',repeated_count:0};
+    if(!allUsersStickers[currentUser.id])allUsersStickers[currentUser.id]={};
+    allUsersStickers[currentUser.id][String(id)]={have:mode==='have',repeated_count:0};
+  });
+  renderStickerGrid();updateStats();renderCountryGrid();
+}
+
+// ── Members ──────────────────────────────────────────────────
+function renderMembers(){
+  const list=document.getElementById('members-list');list.innerHTML='';
+  if(!allUsers.length){list.innerHTML='<div class="empty-state">Nadie más se ha registrado aún.</div>';return;}
+  allUsers.forEach(u=>{
+    const st=allUsersStickers[u.id]||{};
+    const have=Object.values(st).filter(v=>v.have).length;
+    const reps=Object.values(st).reduce((a,v)=>a+(v.repeated_count||0),0);
+    const pct=Math.round(have/TOTAL*100);
+    const c=document.createElement('div');c.className='member-card';
+    c.innerHTML=`<div class="member-top">
+      <div class="member-avatar">${u.name.charAt(0).toUpperCase()}</div>
+      <div class="member-info">
+        <h4>${u.name}${u.id===currentUser.id?' <span style="font-size:11px;color:#aaa;font-weight:400">(tú)</span>':''}</h4>
+        <p>${have}/${TOTAL} estampas · ${reps} repetidas · ${pct}%</p>
+      </div>
+    </div>
+    <div class="member-progress"><div class="member-progress-fill" style="width:${pct}%"></div></div>
+    ${u.id!==currentUser.id?`<div class="member-actions">
+      <button class="tag-btn" onclick="showMemberCol('${u.id}','${u.name.replace(/'/g,"\\'")}')">Ver colección</button>
+      <button class="tag-btn" onclick="showTrade('${u.id}','${u.name.replace(/'/g,"\\'")}')">Ver intercambios</button>
+    </div>`:''}`;
+    list.appendChild(c);
+  });
+}
+
+function showMemberCol(uid,name){
+  document.getElementById('member-modal-title').textContent='Colección de '+name;
+  const body=document.getElementById('member-modal-body');body.innerHTML='';
+  const st=allUsersStickers[uid]||{};
+  TEAMS.forEach(team=>{
+    const nums=Array.from({length:20},(_,i)=>team.base+i);
+    const have=nums.filter(n=>st[n]?.have).length;
+    const reps=nums.filter(n=>(st[n]?.repeated_count||0)>0).length;
+    const row=document.createElement('div');
+    row.style='display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f5f5f0;font-size:13px';
+    row.innerHTML=`<span style="font-weight:600">${team.name} <span style="font-weight:400;color:#bbb;font-size:11px">Gr.${team.group}</span></span>
+    <span><span style="color:#555">${have}/20</span>${reps>0?` · <span style="color:#b8860b;font-weight:600">${reps} rep.</span>`:''}${have===20?' <span style="color:#2d7a4f">✓</span>':''}</span>`;
+    body.appendChild(row);
+  });
+  document.getElementById('member-modal').classList.add('open');
+}
+
+function showTrade(uid,name){
+  document.getElementById('member-modal-title').textContent='Intercambios con '+name;
+  const body=document.getElementById('member-modal-body');body.innerHTML='';
+  const they=allUsersStickers[uid]||{};
+  const give=[],want=[];
+  const check=(id)=>{
+    const iRep=(myStickers[String(id)]?.repeated_count||0)>0;
+    const iHave=myStickers[String(id)]?.have;
+    const tHave=they[String(id)]?.have;
+    const tRep=(they[String(id)]?.repeated_count||0)>0;
+    if(iRep&&!tHave)give.push(id);
+    if(!iHave&&tRep)want.push(id);
+  };
+  TEAMS.forEach(t=>Array.from({length:20},(_,i)=>t.base+i).forEach(check));
+  SPECIALS.forEach(s=>s.stickers.forEach(st=>check(st.id)));
+  if(!give.length&&!want.length){body.innerHTML='<div class="empty-state">Sin intercambios posibles aún.</div>';document.getElementById('member-modal').classList.add('open');return;}
+  const fmt=(arr)=>arr.slice(0,30).map(n=>`<span class="trade-tag">${typeof n==='number'?'#'+n:n}</span>`).join('')+(arr.length>30?`<span style="font-size:11px;color:#aaa"> +${arr.length-30} más</span>`:'');
+  const fmtN=(arr)=>arr.slice(0,30).map(n=>`<span class="trade-tag need">${typeof n==='number'?'#'+n:n}</span>`).join('')+(arr.length>30?`<span style="font-size:11px;color:#aaa"> +${arr.length-30} más</span>`:'');
+  if(give.length)body.innerHTML+=`<div class="trade-section-label">Le doy a ${name} (${give.length})</div><div style="margin-bottom:10px">${fmt(give)}</div>`;
+  if(want.length)body.innerHTML+=`<div class="trade-section-label" style="margin-top:6px">Me da ${name} (${want.length})</div><div>${fmtN(want)}</div>`;
+  document.getElementById('member-modal').classList.add('open');
+}
+
+// ── Trades ───────────────────────────────────────────────────
+function renderTrades(){
+  const list=document.getElementById('trades-list');list.innerHTML='';
+  const others=allUsers.filter(u=>u.id!==currentUser.id);
+  if(!others.length){list.innerHTML='<div class="empty-state">Ningún amigo se ha unido aún.</div>';return;}
+  let found=false;
+  others.forEach(u=>{
+    const they=allUsersStickers[u.id]||{};
+    const give=[],want=[];
+    TEAMS.forEach(t=>Array.from({length:20},(_,i)=>t.base+i).forEach(n=>{
+      if((myStickers[n]?.repeated_count||0)>0&&!they[n]?.have)give.push('#'+n);
+      if(!myStickers[n]?.have&&(they[n]?.repeated_count||0)>0)want.push('#'+n);
+    }));
+    if(give.length||want.length){
+      found=true;
+      const c=document.createElement('div');c.className='trade-card';
+      let h=`<div class="trade-header">Con ${u.name}</div>`;
+      if(give.length)h+=`<div class="trade-section-label">Le doy (${give.length})</div><div style="margin-bottom:6px">${give.slice(0,12).map(n=>`<span class="trade-tag">${n}</span>`).join('')}${give.length>12?`<span style="font-size:11px;color:#aaa"> +${give.length-12} más</span>`:''}</div>`;
+      if(want.length)h+=`<div class="trade-section-label" style="margin-top:6px">Me da (${want.length})</div><div>${want.slice(0,12).map(n=>`<span class="trade-tag need">${n}</span>`).join('')}${want.length>12?`<span style="font-size:11px;color:#aaa"> +${want.length-12} más</span>`:''}</div>`;
+      c.innerHTML=h;list.appendChild(c);
+    }
+  });
+  if(!found)list.innerHTML='<div class="empty-state">Sin intercambios posibles aún.<br>Marca tus repetidas y pide a tus amigos que hagan lo mismo.</div>';
+}
+
+// ── Events ───────────────────────────────────────────────────
+document.getElementById('country-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('member-modal').addEventListener('click',function(e){if(e.target===this)closeMemberModal();});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  if(document.getElementById('login-form').style.display!=='none')doLogin();
+  else if(document.getElementById('register-form').style.display!=='none')doRegister();
+});
+
+hideLoading();
+</script>
+</body>
+</html>
