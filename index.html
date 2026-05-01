@@ -292,31 +292,74 @@ const SUPA_URL='https://bpmgzkbxjpcgtrpbsnpi.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwbWd6a2J4anBjZ3RycGJzbnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MzY3MjEsImV4cCI6MjA5MzIxMjcyMX0.WRNIFpije_ZTO6yWfjWIslbS5mCrwf71LQrnFO5vEBE';
 const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 
+// Colores por grupo exactos del álbum
+const GROUP_COLORS={
+  A:'#4a7c3f', B:'#c0392b', C:'#d4ac0d', D:'#2471a3',
+  E:'#c0392b', F:'#1a5276', G:'#aab7b8', H:'#1e8449',
+  I:'#6c3483', J:'#f0a500', K:'#c0392b', L:'#7b241c'
+};
+
 const TEAMS=[
-  {name:"Argentina",group:"A",code:"ARG"},{name:"Ecuador",group:"A",code:"ECU"},
-  {name:"Nueva Zelanda",group:"A",code:"NZL"},{name:"Sudáfrica",group:"A",code:"RSA"},
-  {name:"España",group:"B",code:"ESP"},{name:"Brasil",group:"B",code:"BRA"},
-  {name:"Japón",group:"B",code:"JPN"},{name:"Arabia Saudita",group:"B",code:"KSA"},
-  {name:"Francia",group:"C",code:"FRA"},{name:"México",group:"C",code:"MEX"},
-  {name:"Bélgica",group:"C",code:"BEL"},{name:"Australia",group:"C",code:"AUS"},
-  {name:"Portugal",group:"D",code:"POR"},{name:"Alemania",group:"D",code:"GER"},
-  {name:"Colombia",group:"D",code:"COL"},{name:"Costa Rica",group:"D",code:"CRC"},
-  {name:"Inglaterra",group:"E",code:"ENG"},{name:"Uruguay",group:"E",code:"URU"},
-  {name:"Países Bajos",group:"E",code:"NED"},{name:"Irak",group:"E",code:"IRQ"},
-  {name:"EUA",group:"F",code:"USA"},{name:"Panamá",group:"F",code:"PAN"},
-  {name:"Serbia",group:"F",code:"SRB"},{name:"Ghana",group:"F",code:"GHA"},
-  {name:"Marruecos",group:"G",code:"MAR"},{name:"Croacia",group:"G",code:"CRO"},
-  {name:"Canadá",group:"G",code:"CAN"},{name:"Chile",group:"G",code:"CHI"},
-  {name:"Italia",group:"H",code:"ITA"},{name:"Perú",group:"H",code:"PER"},
-  {name:"Senegal",group:"H",code:"SEN"},{name:"Suiza",group:"H",code:"SUI"},
-  {name:"Turquía",group:"I",code:"TUR"},{name:"Rumania",group:"I",code:"ROU"},
-  {name:"Venezuela",group:"I",code:"VEN"},{name:"China",group:"I",code:"CHN"},
-  {name:"Austria",group:"J",code:"AUT"},{name:"Hungría",group:"J",code:"HUN"},
-  {name:"Polonia",group:"J",code:"POL"},{name:"Bolivia",group:"J",code:"BOL"},
-  {name:"Ucrania",group:"K",code:"UKR"},{name:"Camerún",group:"K",code:"CMR"},
-  {name:"Rep. Checa",group:"K",code:"CZE"},{name:"Tanzania",group:"K",code:"TAN"},
-  {name:"Irán",group:"L",code:"IRN"},{name:"Eslovaquia",group:"L",code:"SVK"},
-  {name:"Indonesia",group:"L",code:"IDN"},{name:"Eslovenia",group:"L",code:"SVN"}
+  // Grupo A - verde
+  {name:"México",        group:"A", code:"MEX", flag:"🇲🇽", page:8},
+  {name:"Sudáfrica",     group:"A", code:"RSA", flag:"🇿🇦", page:10},
+  {name:"Korea Republic",group:"A", code:"KOR", flag:"🇰🇷", page:12},
+  {name:"Czechia",       group:"A", code:"CZE", flag:"🇨🇿", page:14},
+  // Grupo B - rojo
+  {name:"Canadá",        group:"B", code:"CAN", flag:"🇨🇦", page:16},
+  {name:"Bosnia-Herz.",  group:"B", code:"BIH", flag:"🇧🇦", page:18},
+  {name:"Qatar",         group:"B", code:"QAT", flag:"🇶🇦", page:20},
+  {name:"Suiza",         group:"B", code:"SUI", flag:"🇨🇭", page:22},
+  // Grupo C - amarillo
+  {name:"Brasil",        group:"C", code:"BRA", flag:"🇧🇷", page:24},
+  {name:"Marruecos",     group:"C", code:"MAR", flag:"🇲🇦", page:26},
+  {name:"Haití",         group:"C", code:"HAI", flag:"🇭🇹", page:28},
+  {name:"Escocia",       group:"C", code:"SCO", flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿", page:30},
+  // Grupo D - azul
+  {name:"EUA",           group:"D", code:"USA", flag:"🇺🇸", page:32},
+  {name:"Paraguay",      group:"D", code:"PAR", flag:"🇵🇾", page:34},
+  {name:"Australia",     group:"D", code:"AUS", flag:"🇦🇺", page:36},
+  {name:"Türkiye",       group:"D", code:"TUR", flag:"🇹🇷", page:38},
+  // Grupo E - rojo
+  {name:"Alemania",      group:"E", code:"GER", flag:"🇩🇪", page:40},
+  {name:"Curaçao",       group:"E", code:"CUW", flag:"🇨🇼", page:42},
+  {name:"Côte d'Ivoire", group:"E", code:"CIV", flag:"🇨🇮", page:44},
+  {name:"Ecuador",       group:"E", code:"ECU", flag:"🇪🇨", page:46},
+  // Grupo F - azul oscuro
+  {name:"Países Bajos",  group:"F", code:"NED", flag:"🇳🇱", page:48},
+  {name:"Japón",         group:"F", code:"JPN", flag:"🇯🇵", page:50},
+  {name:"Suecia",        group:"F", code:"SWE", flag:"🇸🇪", page:52},
+  {name:"Túnez",         group:"F", code:"TUN", flag:"🇹🇳", page:54},
+  // Grupo G - gris/lila
+  {name:"Bélgica",       group:"G", code:"BEL", flag:"🇧🇪", page:58},
+  {name:"Egipto",        group:"G", code:"EGY", flag:"🇪🇬", page:60},
+  {name:"IR Irán",       group:"G", code:"IRN", flag:"🇮🇷", page:62},
+  {name:"Nueva Zelanda", group:"G", code:"NZL", flag:"🇳🇿", page:64},
+  // Grupo H - verde
+  {name:"España",        group:"H", code:"ESP", flag:"🇪🇸", page:66},
+  {name:"Cabo Verde",    group:"H", code:"CPV", flag:"🇨🇻", page:68},
+  {name:"Arabia Saudita",group:"H", code:"KSA", flag:"🇸🇦", page:70},
+  {name:"Uruguay",       group:"H", code:"URU", flag:"🇺🇾", page:72},
+  // Grupo I - morado
+  {name:"Francia",       group:"I", code:"FRA", flag:"🇫🇷", page:74},
+  {name:"Senegal",       group:"I", code:"SEN", flag:"🇸🇳", page:76},
+  {name:"Irak",          group:"I", code:"IRQ", flag:"🇮🇶", page:78},
+  {name:"Noruega",       group:"I", code:"NOR", flag:"🇳🇴", page:80},
+  // Grupo J - naranja/rosa
+  {name:"Argentina",     group:"J", code:"ARG", flag:"🇦🇷", page:82},
+  {name:"Argelia",       group:"J", code:"ALG", flag:"🇩🇿", page:84},
+  {name:"Austria",       group:"J", code:"AUT", flag:"🇦🇹", page:86},
+  {name:"Jordania",      group:"J", code:"JOR", flag:"🇯🇴", page:88},
+  // Grupo K - rojo
+  {name:"Portugal",      group:"K", code:"POR", flag:"🇵🇹", page:90},
+  {name:"Congo DR",      group:"K", code:"COD", flag:"🇨🇩", page:92},
+  {name:"Uzbekistán",    group:"K", code:"UZB", flag:"🇺🇿", page:94},
+  {name:"Colombia",      group:"K", code:"COL", flag:"🇨🇴", page:96},
+  // Grupo L - vino
+  {name:"Inglaterra",    group:"L", code:"ENG", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", page:98},
+  {name:"Croacia",       group:"L", code:"CRO", flag:"🇭🇷", page:100},
+  {name:"Ghana",         group:"L", code:"GHA", flag:"🇬🇭", page:102},
+  {name:"Panamá",        group:"L", code:"PAN", flag:"🇵🇦", page:104},
 ];
 
 const SPECIALS=[
@@ -545,16 +588,32 @@ function renderCountryGrid(){
   });
 
   addDivider();addLabel('Equipos');
+  let lastGroup='';
   TEAMS.forEach(team=>{
+    if(team.group!==lastGroup){
+      lastGroup=team.group;
+      const color=GROUP_COLORS[team.group]||'#1a4d2e';
+      const gh=document.createElement('div');
+      gh.style=`grid-column:1/-1;background:${color};color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;margin:8px 0 4px;letter-spacing:.05em`;
+      gh.textContent='GRUPO '+team.group;
+      grid.appendChild(gh);
+    }
     const ids=teamStickerIds(team);
     const have=ids.filter(id=>getSD(id).have).length;
     const pct=Math.round(have/20*100);const complete=have===20;
     if(currentFilter==='completo'&&!complete)return;
     if(currentFilter==='incompleto'&&complete)return;
+    const color=GROUP_COLORS[team.group]||'#1a4d2e';
     const c=document.createElement('div');c.className='country-card'+(complete?' complete':'');
-    c.innerHTML=`<div class="country-name">${team.name}</div>
-    <div class="country-group">Grupo ${team.group}</div>
-    <div class="country-mini-progress"><div class="country-mini-fill" style="width:${pct}%"></div></div>
+    c.style=`border-left:4px solid ${color}`;
+    c.innerHTML=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+      <span style="font-size:18px;line-height:1">${team.flag}</span>
+      <div>
+        <div class="country-name">${team.name}</div>
+        <div class="country-group" style="color:${color}">Grupo ${team.group} · p.${team.page}</div>
+      </div>
+    </div>
+    <div class="country-mini-progress"><div class="country-mini-fill" style="width:${pct}%;background:${color}"></div></div>
     <div class="country-count">${have}/20${complete?' ✓':''}</div>`;
     c.onclick=()=>openCountryModal(team);grid.appendChild(c);
   });
@@ -563,7 +622,7 @@ function renderCountryGrid(){
 // ── Modals ───────────────────────────────────────────────────
 function openCountryModal(team){
   openCountry=team;openSpecial=null;
-  document.getElementById('modal-country-name').textContent=team.name+' · Grupo '+team.group;
+  document.getElementById('modal-country-name').textContent=team.flag+' '+team.name+' · Gr.'+team.group;
   renderStickerGrid();document.getElementById('country-modal').classList.add('open');
 }
 function openSpecialModal(sec){
