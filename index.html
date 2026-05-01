@@ -1342,21 +1342,34 @@ document.addEventListener('keydown',e=>{
 
 // ── Init: auto-login ─────────────────────────────────────────
 (async()=>{
-  try { applyLang(); } catch(e){ console.warn('applyLang error:',e); }
+  // Safety net — always show login after 5 seconds no matter what
+  const safetyTimer=setTimeout(()=>{
+    console.warn('Safety timer triggered — showing login');
+    hideLoading();
+  }, 5000);
+
+  try {
+    applyLang();
+  } catch(e){ console.warn('applyLang:',e); }
+
   try {
     const savedId=localStorage.getItem('panini_uid');
     if(savedId){
-      setLoading(T('loading'));
       const{data,error}=await sb.from('users').select('*').eq('id',savedId).maybeSingle();
       if(data&&!error){
         currentUser=data;
+        clearTimeout(safetyTimer);
         await loadAndShowMain();
         return;
-      } else {
-        localStorage.removeItem('panini_uid');
       }
+      localStorage.removeItem('panini_uid');
     }
-  } catch(e){ console.error('Init error:',e); }
+  } catch(e){
+    console.error('Auto-login error:',e);
+    localStorage.removeItem('panini_uid');
+  }
+
+  clearTimeout(safetyTimer);
   hideLoading();
 })();
 </script>
