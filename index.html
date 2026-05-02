@@ -246,6 +246,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="filter-btn active" onclick="setFilter('todos',this)">Todos</button>
       <button class="filter-btn" onclick="setFilter('incompleto',this)">Incompletos</button>
       <button class="filter-btn" onclick="setFilter('completo',this)">Completos</button>
+      <button id="csv-btn" onclick="downloadCSV()" style="margin-left:auto;padding:6px 14px;border-radius:20px;border:1.5px solid #4a2d7a;background:#fff;font-size:12px;cursor:pointer;color:#4a2d7a;font-weight:600">⬇ CSV</button>
     </div>
     <div class="grid" id="team-grid"></div>
   </div>
@@ -325,18 +326,18 @@ const sb=supabase.createClient(
 // ── DATA ──────────────────────────────────────────────────────
 const GRP_COLORS={A:'#4a7c3f',B:'#c0392b',C:'#d4ac0d',D:'#2471a3',E:'#c0392b',F:'#1a5276',G:'#888',H:'#1e8449',I:'#6c3483',J:'#e67e22',K:'#c0392b',L:'#7b241c'};
 const TEAMS=[
-  {name:"México",group:"A",code:"MEX",flag:"🇲🇽"},{name:"Sudáfrica",group:"A",code:"RSA",flag:"🇿🇦"},{name:"Korea Republic",group:"A",code:"KOR",flag:"🇰🇷"},{name:"Czechia",group:"A",code:"CZE",flag:"🇨🇿"},
-  {name:"Canadá",group:"B",code:"CAN",flag:"🇨🇦"},{name:"Bosnia-Herz.",group:"B",code:"BIH",flag:"🇧🇦"},{name:"Qatar",group:"B",code:"QAT",flag:"🇶🇦"},{name:"Suiza",group:"B",code:"SUI",flag:"🇨🇭"},
-  {name:"Brasil",group:"C",code:"BRA",flag:"🇧🇷"},{name:"Marruecos",group:"C",code:"MAR",flag:"🇲🇦"},{name:"Haití",group:"C",code:"HAI",flag:"🇭🇹"},{name:"Escocia",group:"C",code:"SCO",flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿"},
-  {name:"EUA",group:"D",code:"USA",flag:"🇺🇸"},{name:"Paraguay",group:"D",code:"PAR",flag:"🇵🇾"},{name:"Australia",group:"D",code:"AUS",flag:"🇦🇺"},{name:"Türkiye",group:"D",code:"TUR",flag:"🇹🇷"},
-  {name:"Alemania",group:"E",code:"GER",flag:"🇩🇪"},{name:"Curaçao",group:"E",code:"CUW",flag:"🇨🇼"},{name:"Côte d'Ivoire",group:"E",code:"CIV",flag:"🇨🇮"},{name:"Ecuador",group:"E",code:"ECU",flag:"🇪🇨"},
-  {name:"Países Bajos",group:"F",code:"NED",flag:"🇳🇱"},{name:"Japón",group:"F",code:"JPN",flag:"🇯🇵"},{name:"Suecia",group:"F",code:"SWE",flag:"🇸🇪"},{name:"Túnez",group:"F",code:"TUN",flag:"🇹🇳"},
-  {name:"Bélgica",group:"G",code:"BEL",flag:"🇧🇪"},{name:"Egipto",group:"G",code:"EGY",flag:"🇪🇬"},{name:"IR Irán",group:"G",code:"IRN",flag:"🇮🇷"},{name:"Nueva Zelanda",group:"G",code:"NZL",flag:"🇳🇿"},
-  {name:"España",group:"H",code:"ESP",flag:"🇪🇸"},{name:"Cabo Verde",group:"H",code:"CPV",flag:"🇨🇻"},{name:"Arabia Saudita",group:"H",code:"KSA",flag:"🇸🇦"},{name:"Uruguay",group:"H",code:"URU",flag:"🇺🇾"},
-  {name:"Francia",group:"I",code:"FRA",flag:"🇫🇷"},{name:"Senegal",group:"I",code:"SEN",flag:"🇸🇳"},{name:"Irak",group:"I",code:"IRQ",flag:"🇮🇶"},{name:"Noruega",group:"I",code:"NOR",flag:"🇳🇴"},
-  {name:"Argentina",group:"J",code:"ARG",flag:"🇦🇷"},{name:"Argelia",group:"J",code:"ALG",flag:"🇩🇿"},{name:"Austria",group:"J",code:"AUT",flag:"🇦🇹"},{name:"Jordania",group:"J",code:"JOR",flag:"🇯🇴"},
-  {name:"Portugal",group:"K",code:"POR",flag:"🇵🇹"},{name:"Congo DR",group:"K",code:"COD",flag:"🇨🇩"},{name:"Uzbekistán",group:"K",code:"UZB",flag:"🇺🇿"},{name:"Colombia",group:"K",code:"COL",flag:"🇨🇴"},
-  {name:"Inglaterra",group:"L",code:"ENG",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},{name:"Croacia",group:"L",code:"CRO",flag:"🇭🇷"},{name:"Ghana",group:"L",code:"GHA",flag:"🇬🇭"},{name:"Panamá",group:"L",code:"PAN",flag:"🇵🇦"},
+  {name:"México",en:"Mexico",group:"A",code:"MEX",flag:"🇲🇽"},{name:"Sudáfrica",en:"South Africa",group:"A",code:"RSA",flag:"🇿🇦"},{name:"Korea Republic",en:"Korea Republic",group:"A",code:"KOR",flag:"🇰🇷"},{name:"Czechia",en:"Czechia",group:"A",code:"CZE",flag:"🇨🇿"},
+  {name:"Canadá",en:"Canada",group:"B",code:"CAN",flag:"🇨🇦"},{name:"Bosnia-Herz.",en:"Bosnia-Herz.",group:"B",code:"BIH",flag:"🇧🇦"},{name:"Qatar",en:"Qatar",group:"B",code:"QAT",flag:"🇶🇦"},{name:"Suiza",en:"Switzerland",group:"B",code:"SUI",flag:"🇨🇭"},
+  {name:"Brasil",en:"Brazil",group:"C",code:"BRA",flag:"🇧🇷"},{name:"Marruecos",en:"Morocco",group:"C",code:"MAR",flag:"🇲🇦"},{name:"Haití",en:"Haiti",group:"C",code:"HAI",flag:"🇭🇹"},{name:"Escocia",en:"Scotland",group:"C",code:"SCO",flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿"},
+  {name:"EUA",en:"USA",group:"D",code:"USA",flag:"🇺🇸"},{name:"Paraguay",en:"Paraguay",group:"D",code:"PAR",flag:"🇵🇾"},{name:"Australia",en:"Australia",group:"D",code:"AUS",flag:"🇦🇺"},{name:"Türkiye",en:"Türkiye",group:"D",code:"TUR",flag:"🇹🇷"},
+  {name:"Alemania",en:"Germany",group:"E",code:"GER",flag:"🇩🇪"},{name:"Curaçao",en:"Curaçao",group:"E",code:"CUW",flag:"🇨🇼"},{name:"Côte d'Ivoire",en:"Côte d'Ivoire",group:"E",code:"CIV",flag:"🇨🇮"},{name:"Ecuador",en:"Ecuador",group:"E",code:"ECU",flag:"🇪🇨"},
+  {name:"Países Bajos",en:"Netherlands",group:"F",code:"NED",flag:"🇳🇱"},{name:"Japón",en:"Japan",group:"F",code:"JPN",flag:"🇯🇵"},{name:"Suecia",en:"Sweden",group:"F",code:"SWE",flag:"🇸🇪"},{name:"Túnez",en:"Tunisia",group:"F",code:"TUN",flag:"🇹🇳"},
+  {name:"Bélgica",en:"Belgium",group:"G",code:"BEL",flag:"🇧🇪"},{name:"Egipto",en:"Egypt",group:"G",code:"EGY",flag:"🇪🇬"},{name:"IR Irán",en:"IR Iran",group:"G",code:"IRN",flag:"🇮🇷"},{name:"Nueva Zelanda",en:"New Zealand",group:"G",code:"NZL",flag:"🇳🇿"},
+  {name:"España",en:"Spain",group:"H",code:"ESP",flag:"🇪🇸"},{name:"Cabo Verde",en:"Cabo Verde",group:"H",code:"CPV",flag:"🇨🇻"},{name:"Arabia Saudita",en:"Saudi Arabia",group:"H",code:"KSA",flag:"🇸🇦"},{name:"Uruguay",en:"Uruguay",group:"H",code:"URU",flag:"🇺🇾"},
+  {name:"Francia",en:"France",group:"I",code:"FRA",flag:"🇫🇷"},{name:"Senegal",en:"Senegal",group:"I",code:"SEN",flag:"🇸🇳"},{name:"Irak",en:"Iraq",group:"I",code:"IRQ",flag:"🇮🇶"},{name:"Noruega",en:"Norway",group:"I",code:"NOR",flag:"🇳🇴"},
+  {name:"Argentina",en:"Argentina",group:"J",code:"ARG",flag:"🇦🇷"},{name:"Argelia",en:"Algeria",group:"J",code:"ALG",flag:"🇩🇿"},{name:"Austria",en:"Austria",group:"J",code:"AUT",flag:"🇦🇹"},{name:"Jordania",en:"Jordan",group:"J",code:"JOR",flag:"🇯🇴"},
+  {name:"Portugal",en:"Portugal",group:"K",code:"POR",flag:"🇵🇹"},{name:"Congo DR",en:"Congo DR",group:"K",code:"COD",flag:"🇨🇩"},{name:"Uzbekistán",en:"Uzbekistan",group:"K",code:"UZB",flag:"🇺🇿"},{name:"Colombia",en:"Colombia",group:"K",code:"COL",flag:"🇨🇴"},
+  {name:"Inglaterra",en:"England",group:"L",code:"ENG",flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},{name:"Croacia",en:"Croatia",group:"L",code:"CRO",flag:"🇭🇷"},{name:"Ghana",en:"Ghana",group:"L",code:"GHA",flag:"🇬🇭"},{name:"Panamá",en:"Panama",group:"L",code:"PAN",flag:"🇵🇦"},
 ];
 const SPECIALS=[
   {id:'sp-panini',name:'We Are Panini',color:'#7c4daa',stickers:[{id:'00',label:'WE ARE PANINI'}]},
@@ -352,6 +353,7 @@ let me=null,myS={},allUsers=[],allS={},openTeam=null,openSpecial=null,filter='to
 
 // ── HELPERS ───────────────────────────────────────────────────
 function ids(team){return Array.from({length:20},(_,i)=>team.code+'-'+(i+1));}
+function teamName(team){return lang==='en'?team.en:team.name;}
 function getSD(id){const s=myS[String(id)];return{have:s?.have||false,reps:s?.repeated_count||0};}
 function setSyncing(st){const d=document.getElementById('sync-dot');if(!d)return;d.className='sync-dot'+(st==='syncing'?' syncing':st==='error'?' error':'');}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
@@ -502,7 +504,7 @@ function renderGrid(){
     c.style=`border-left:4px solid ${color}`;
     c.innerHTML=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
       <span style="font-size:17px">${team.flag}</span>
-      <div><div class="team-name">${team.name}</div><div class="team-group" style="color:${color}">${lang==='es'?'Grupo':'Group'} ${team.group}</div></div>
+      <div><div class="team-name">${teamName(team)}</div><div class="team-group" style="color:${color}">${lang==='es'?'Grupo':'Group'} ${team.group}</div></div>
     </div>
     <div class="mini-bar"><div class="mini-fill" style="width:${pct}%;background:${color}"></div></div>
     <div class="team-count">${have}/20${complete?' ✓':''}</div>`;
@@ -514,7 +516,7 @@ function renderGrid(){
 function openModal(item,isSpecial){
   isSpecial?openSpecial=item:openTeam=item;
   if(!isSpecial)openSpecial=null;else openTeam=null;
-  document.getElementById('modal-title').textContent=isSpecial?item.name:(item.flag+' '+item.name+' · Gr.'+item.group);
+  document.getElementById('modal-title').textContent=isSpecial?item.name:(item.flag+' '+teamName(item)+' · Gr.'+item.group);
   renderStickers();
   document.getElementById('team-modal').classList.add('open');
 }
@@ -585,7 +587,7 @@ async function markAll(mode){
 // ── REPS ──────────────────────────────────────────────────────
 function renderReps(){
   const list=document.getElementById('reps-list');list.innerHTML='';let found=false;
-  const sections=[...TEAMS.map(t=>({name:t.flag+' '+t.name,color:GRP_COLORS[t.group]||'#333',items:Array.from({length:20},(_,i)=>({id:t.code+'-'+(i+1),label:LABELS[i]}))})),...SPECIALS.map(s=>({name:s.name,color:s.color,items:s.stickers}))];
+  const sections=[...TEAMS.map(t=>({name:t.flag+' '+teamName(t),color:GRP_COLORS[t.group]||'#333',items:Array.from({length:20},(_,i)=>({id:t.code+'-'+(i+1),label:LABELS[i]}))})),...SPECIALS.map(s=>({name:s.name,color:s.color,items:s.stickers}))];
   sections.forEach(sec=>{
     const repItems=sec.items.filter(item=>{const s=myS[String(item.id)];return s&&s.have&&(s.repeated_count||0)>0;});
     if(!repItems.length)return;found=true;
@@ -651,7 +653,7 @@ function showMemberCol(uid,name){
     const reps=tids.filter(id=>(st[id]?.repeated_count||0)>0).length;
     const row=document.createElement('div');
     row.style='display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f5f5f0;font-size:13px';
-    row.innerHTML=`<span style="font-weight:600">${team.flag} ${team.name}</span>
+    row.innerHTML=`<span style="font-weight:600">${team.flag} ${teamName(team)}</span>
     <span><span style="color:#555">${have}/20</span>${reps>0?` · <span style="color:#b8860b;font-weight:600">${reps} rep.</span>`:''}${have===20?' ✓':''}</span>`;
     body.appendChild(row);
   });
@@ -700,6 +702,37 @@ function renderTrades(){
 }
 
 // ── INVITE ────────────────────────────────────────────────────
+function downloadCSV(){
+  const rows=[lang==='es'
+    ?['Tipo','Equipo','Grupo','Estampa','Estado','Repetidas']
+    :['Type','Team','Group','Sticker','Status','Duplicates']
+  ];
+  // Specials
+  SPECIALS.forEach(sec=>{
+    sec.stickers.forEach(s=>{
+      const{have,reps}=getSD(s.id);
+      if(!have)rows.push([lang==='es'?'Especial':'Special',sec.name,'-',s.id,lang==='es'?'Falta':'Missing',0]);
+      else if(reps>0)rows.push([lang==='es'?'Especial':'Special',sec.name,'-',s.id,lang==='es'?'Repetida':'Duplicate',reps]);
+    });
+  });
+  // Teams
+  TEAMS.forEach(team=>{
+    ids(team).forEach((id,i)=>{
+      const{have,reps}=getSD(id);
+      const name=teamName(team);
+      if(!have)rows.push([lang==='es'?'Equipo':'Team',name,'Gr.'+team.group,id,lang==='es'?'Falta':'Missing',0]);
+      else if(reps>0)rows.push([lang==='es'?'Equipo':'Team',name,'Gr.'+team.group,id,lang==='es'?'Repetida':'Duplicate',reps]);
+    });
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`panini-wc2026-${me?.username||'collection'}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();URL.revokeObjectURL(url);
+  toast(lang==='es'?'CSV descargado ✓':'CSV downloaded ✓');
+}
+
 function copyLink(){
   navigator.clipboard.writeText(window.location.href).then(()=>toast(t('copied'))).catch(()=>prompt('Copia este link:',window.location.href));
 }
