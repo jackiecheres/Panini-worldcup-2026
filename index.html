@@ -434,7 +434,7 @@ async function loadMain(){
   setLoading(t('loading'));
   const[{data:users,error:e2},{data:allSt,error:e3}]=await Promise.all([
     sb.from('users').select('id,username,name,photo_url'),
-    sb.from('stickers').select('*')
+    sb.from('stickers').select('*').limit(10000)
   ]);
   if(e2||e3){
     document.getElementById('loading-msg').textContent='Error al cargar: '+(e2||e3).message;
@@ -481,7 +481,7 @@ function subscribeRT(){
   setInterval(async()=>{
     if(document.getElementById('tab-grupo').style.display==='none'&&
        document.getElementById('tab-cambios').style.display==='none') return;
-    const{data:allSt}=await sb.from('stickers').select('*');
+    const{data:allSt}=await sb.from('stickers').select('*').limit(10000);
     if(!allSt)return;
     const newAllS={};
     allSt.forEach(s=>{
@@ -513,7 +513,7 @@ async function reloadAndRenderMembers(){
   document.getElementById('members-list').innerHTML='<div class="empty" style="color:#aaa">Actualizando...</div>';
   const[{data:users,error:e1},{data:allSt,error:e2}]=await Promise.all([
     sb.from('users').select('id,username,name,photo_url'),
-    sb.from('stickers').select('*')
+    sb.from('stickers').select('*').limit(10000)
   ]);
   if(e1||e2){document.getElementById('members-list').innerHTML='<div class="empty">Error al cargar</div>';return;}
   allUsers=users||[];
@@ -522,13 +522,8 @@ async function reloadAndRenderMembers(){
     if(!newAllS[s.user_id])newAllS[s.user_id]={};
     newAllS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
   });
-  // Debug: check what DB says for me
-  const dbCount=newAllS[me.id]?Object.values(newAllS[me.id]).filter(v=>v.have).length:0;
-  const myCount=Object.values(myS).filter(v=>v.have).length;
-  console.log(`DB has ${dbCount} for me, myS has ${myCount}`);
   const dbg=document.getElementById('debug-count');
-  if(dbg)dbg.textContent=`DB:${dbCount} local:${myCount}`;
-  // Update allS for other users only, keep myS for current user
+  if(dbg)dbg.textContent=`rows:${allSt?.length} me:${newAllS[me.id]?Object.values(newAllS[me.id]).filter(v=>v.have).length:0}`;
   allS=newAllS;
   allS[me.id]=Object.assign({},myS);
   renderMembers();
@@ -536,7 +531,7 @@ async function reloadAndRenderMembers(){
 
 async function reloadAndRenderTrades(){
   document.getElementById('trades-list').innerHTML='<div class="empty" style="color:#aaa">Actualizando...</div>';
-  const{data:allSt,error}=await sb.from('stickers').select('*');
+  const{data:allSt,error}=await sb.from('stickers').select('*').limit(10000);
   if(error){document.getElementById('trades-list').innerHTML='<div class="empty">Error al cargar</div>';return;}
   allS={};
   (allSt||[]).forEach(s=>{
