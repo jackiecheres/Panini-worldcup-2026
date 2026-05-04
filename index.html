@@ -517,13 +517,19 @@ async function reloadAndRenderMembers(){
   ]);
   if(e1||e2){document.getElementById('members-list').innerHTML='<div class="empty">Error al cargar</div>';return;}
   allUsers=users||[];
-  allS={};
+  const newAllS={};
   (allSt||[]).forEach(s=>{
-    if(!allS[s.user_id])allS[s.user_id]={};
-    allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
+    if(!newAllS[s.user_id])newAllS[s.user_id]={};
+    newAllS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
   });
-  // NEVER overwrite myS — it's always more current than the DB
-  // Just sync allS[me.id] from myS to reflect latest local state
+  // Debug: check what DB says for me
+  const dbCount=newAllS[me.id]?Object.values(newAllS[me.id]).filter(v=>v.have).length:0;
+  const myCount=Object.values(myS).filter(v=>v.have).length;
+  console.log(`DB has ${dbCount} for me, myS has ${myCount}`);
+  const dbg=document.getElementById('debug-count');
+  if(dbg)dbg.textContent=`DB:${dbCount} local:${myCount}`;
+  // Update allS for other users only, keep myS for current user
+  allS=newAllS;
   allS[me.id]=Object.assign({},myS);
   renderMembers();
 }
