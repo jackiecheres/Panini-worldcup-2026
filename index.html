@@ -228,6 +228,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="header-right">
       <span class="sync-dot" id="sync-dot"></span>
+      <span id="debug-count" style="font-size:10px;color:rgba(255,255,255,.6);white-space:nowrap"></span>
       <button id="main-lang-btn" onclick="toggleLang()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:12px;padding:4px 10px;border-radius:20px;cursor:pointer;font-weight:600">🇲🇽</button>
       <div class="avatar" id="header-av" onclick="alert('Perfil próximamente')">S</div>
       <button class="btn-logout" id="logout-btn" onclick="doLogout()">Salir</button>
@@ -552,6 +553,10 @@ function updateStats(){
   document.getElementById('st-reps').textContent=reps;
   document.getElementById('st-pct').textContent=have+' / '+TOTAL;
   document.getElementById('progress-fill').style.width=pct+'%';
+  // Debug: show allS count for me in header
+  const allSMeCount=allS[me?.id]?Object.values(allS[me.id]).filter(v=>v.have).length:0;
+  const dbg=document.getElementById('debug-count');
+  if(dbg)dbg.textContent=`myS:${have} allS:${allSMeCount}`;
 }
 
 // ── GRID ──────────────────────────────────────────────────────
