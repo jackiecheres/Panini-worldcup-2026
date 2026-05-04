@@ -462,7 +462,13 @@ function subscribeRT(){
     if(!allS[s.user_id])allS[s.user_id]={};
     if(v)allS[s.user_id][s.sticker_id]=v;else delete allS[s.user_id][s.sticker_id];
     if(s.user_id===me.id){if(v)myS[s.sticker_id]=v;else delete myS[s.sticker_id];}
-    updateStats();renderGrid();
+    updateStats();
+    // Re-render whichever tab is currently visible
+    if(document.getElementById('tab-album').style.display!=='none')renderGrid();
+    if(document.getElementById('tab-faltantes').style.display!=='none')renderFaltantes();
+    if(document.getElementById('tab-repetidas').style.display!=='none')renderReps();
+    if(document.getElementById('tab-grupo').style.display!=='none')renderMembers();
+    if(document.getElementById('tab-cambios').style.display!=='none')renderTrades();
   }).subscribe();
 }
 
@@ -479,22 +485,40 @@ function switchTab(id){
 }
 
 async function reloadAndRenderMembers(){
-  const[{data:users},{data:allSt}]=await Promise.all([
+  document.getElementById('members-list').innerHTML='<div class="empty" style="color:#aaa">Actualizando...</div>';
+  const[{data:users,error:e1},{data:allSt,error:e2}]=await Promise.all([
     sb.from('users').select('id,username,name,photo_url'),
     sb.from('stickers').select('*')
   ]);
+  if(e1||e2){document.getElementById('members-list').innerHTML='<div class="empty">Error al cargar</div>';return;}
   allUsers=users||[];
-  allS={};(allSt||[]).forEach(s=>{if(!allS[s.user_id])allS[s.user_id]={};allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
-  // Also update my own stickers
-  myS={};if(allS[me.id])Object.assign(myS,allS[me.id]);
+  allS={};
+  (allSt||[]).forEach(s=>{
+    if(!allS[s.user_id])allS[s.user_id]={};
+    allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
+  });
+  // Sync my own stickers from fresh data
+  if(allS[me.id]){
+    myS={};
+    Object.entries(allS[me.id]).forEach(([k,v])=>{myS[k]=v;});
+  }
   updateStats();
   renderMembers();
 }
 
 async function reloadAndRenderTrades(){
-  const{data:allSt}=await sb.from('stickers').select('*');
-  allS={};(allSt||[]).forEach(s=>{if(!allS[s.user_id])allS[s.user_id]={};allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
-  myS={};if(allS[me.id])Object.assign(myS,allS[me.id]);
+  document.getElementById('trades-list').innerHTML='<div class="empty" style="color:#aaa">Actualizando...</div>';
+  const{data:allSt,error}=await sb.from('stickers').select('*');
+  if(error){document.getElementById('trades-list').innerHTML='<div class="empty">Error al cargar</div>';return;}
+  allS={};
+  (allSt||[]).forEach(s=>{
+    if(!allS[s.user_id])allS[s.user_id]={};
+    allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
+  });
+  if(allS[me.id]){
+    myS={};
+    Object.entries(allS[me.id]).forEach(([k,v])=>{myS[k]=v;});
+  }
   updateStats();
   renderTrades();
 }
@@ -838,75 +862,62 @@ function printList(type){
   const date=new Date().toLocaleDateString(lang==='es'?'es-MX':'en-US');
   const user=me?.name||'';
 
-  let rows=[];
+  let sections=[];
 
   // Specials
   SPECIALS.forEach(sec=>{
     const items=isFalt
-      ?sec.stickers.filter(s=>!getSD(s.id).have)
-      :sec.stickers.filter(s=>{const d=getSD(s.id);return d.have&&d.reps>0;});
-    items.forEach(s=>{
-      const reps=getSD(s.id).reps;
-      rows.push({section:sec.name,flag:'',id:s.id,label:s.label,reps});
-    });
+      ?sec.stickers.filter(s=>!getSD(s.id).have).map(s=>({id:s.id,reps:0}))
+      :sec.stickers.filter(s=>{const d=getSD(s.id);return d.have&&d.reps>0;}).map(s=>({id:s.id,reps:getSD(s.id).reps}));
+    if(items.length)sections.push({name:sec.name,flag:'',color:'#7c4daa',items});
   });
 
   // Teams
   TEAMS.forEach(team=>{
     const tids=ids(team);
-    const filtered=isFalt
-      ?tids.filter(id=>!getSD(id).have)
-      :tids.filter(id=>{const d=getSD(id);return d.have&&d.reps>0;});
-    filtered.forEach(id=>{
-      const n=parseInt(id.split('-')[1]);
-      const label=n===1?(lang==='es'?'Escudo':'Crest'):n===2?(lang==='es'?'Foto':'Photo'):(lang==='es'?'Jugador ':'Player ')+(n-2);
-      const reps=getSD(id).reps;
-      rows.push({section:teamName(team),flag:team.flag,id,label,group:team.group,reps});
-    });
+    const items=isFalt
+      ?tids.filter(id=>!getSD(id).have).map(id=>({id,reps:0}))
+      :tids.filter(id=>{const d=getSD(id);return d.have&&d.reps>0;}).map(id=>({id,reps:getSD(id).reps}));
+    if(items.length)sections.push({name:teamName(team),flag:team.flag,color:GRP_COLORS[team.group]||'#333',group:team.group,items});
   });
 
-  // Build print HTML
-  let lastSection='';
-  let tableRows='';
-  rows.forEach(r=>{
-    if(r.section!==lastSection){
-      lastSection=r.section;
-      tableRows+=`<tr style="background:#4a2d7a;color:#fff"><td colspan="${isFalt?3:4}" style="padding:6px 10px;font-weight:700;font-size:12px">${r.flag?r.flag+' ':''} ${r.section}${r.group?' · Gr.'+r.group:''}</td></tr>`;
-    }
-    tableRows+=`<tr>
-      <td style="padding:5px 10px;border-bottom:1px solid #eee;font-weight:600;color:#555">${r.id}</td>
-      <td style="padding:5px 10px;border-bottom:1px solid #eee;color:#333">${r.label}</td>
-      ${!isFalt?`<td style="padding:5px 10px;border-bottom:1px solid #eee;color:#7a5c00;font-weight:600">${r.reps} extra</td>`:''}
-    </tr>`;
-  });
-
-  const html=`
-    <div id="print-area" style="font-family:Arial,sans-serif;background:#fff">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #4a2d7a">
-        <div>
-          <div style="font-size:18px;font-weight:800;color:#4a2d7a">⚽ Panini FIFA World Cup 2026</div>
-          <div style="font-size:14px;color:#666;margin-top:2px">${title} — ${user}</div>
-        </div>
-        <div style="font-size:12px;color:#aaa">${date} · ${rows.length} ${lang==='es'?'estampas':'stickers'}</div>
+  // Build chips HTML
+  let body='';
+  sections.forEach(sec=>{
+    const chips=sec.items.map(item=>{
+      const shortId=item.id.replace('-','');
+      const extra=!isFalt&&item.reps>0?`<sup>+${item.reps}</sup>`:'';
+      return `<span style="display:inline-block;border:1px solid #ccc;border-radius:4px;padding:2px 5px;font-size:11px;font-weight:600;margin:2px;background:#fff;color:#222;white-space:nowrap">${shortId}${extra}</span>`;
+    }).join('');
+    body+=`<div style="margin-bottom:10px;page-break-inside:avoid">
+      <div style="background:${sec.color};color:#fff;padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px 4px 0 0;display:inline-flex;align-items:center;gap:5px">
+        ${sec.flag?`<span>${sec.flag}</span>`:''}${sec.name}${sec.group?` · Gr.${sec.group}`:''}
+        <span style="opacity:.75;font-weight:400">(${sec.items.length})</span>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <thead><tr style="background:#f5f5f5">
-          <th style="padding:6px 10px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">ID</th>
-          <th style="padding:6px 10px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">${lang==='es'?'Descripción':'Description'}</th>
-          ${!isFalt?`<th style="padding:6px 10px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Extra</th>`:''}
-        </tr></thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-      ${rows.length===0?`<p style="text-align:center;color:#4a9b3f;font-weight:700;margin-top:20px">🎉 ${lang==='es'?'¡No hay estampas en esta categoría!':'Nothing here!'}</p>`:''}
+      <div style="border:1px solid #ddd;border-radius:0 4px 4px 4px;padding:6px 4px 4px">${chips}</div>
     </div>`;
+  });
 
-  // Open print window
-  const w=window.open('','_blank','width=800,height=600');
-  w.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
-    <style>body{margin:0;padding:20px;background:#fff}@media print{@page{margin:15mm}}</style>
-    </head><body>${html}
-    <script>window.onload=function(){window.print();}<\/script>
-    </body></html>`);
+  const totalStickers=sections.reduce((a,s)=>a+s.items.length,0);
+
+  const html=`<!DOCTYPE html><html><head><title>${title}</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:15mm;color:#222;font-size:12px}
+    h2{margin:0 0 2px;font-size:16px;color:#4a2d7a}
+    .meta{font-size:11px;color:#888;margin-bottom:14px}
+    @media print{@page{margin:10mm}body{margin:0}}
+  </style>
+  </head><body>
+  <h2>⚽ Panini FIFA World Cup 2026 — ${title}</h2>
+  <div class="meta">${user} · ${date} · ${totalStickers} ${lang==='es'?'estampas':'stickers'}</div>
+  ${totalStickers===0
+    ?`<p style="color:#4a9b3f;font-weight:700">🎉 ${lang==='es'?'¡No hay estampas en esta categoría!':'Nothing here!'}</p>`
+    :body}
+  <script>window.onload=function(){window.print();}<\/script>
+  </body></html>`;
+
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(html);
   w.document.close();
 }
 
