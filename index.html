@@ -807,10 +807,21 @@ function showTrade(uid,name){
   };
   TEAMS.forEach(t=>ids(t).forEach(check));SPECIALS.forEach(s=>s.stickers.forEach(st=>check(st.id)));
   if(!give.length&&!want.length){body.innerHTML=`<div class="empty">${t('no_possible')}</div>`;document.getElementById('member-modal').classList.add('open');return;}
-  const fmt=arr=>arr.slice(0,30).map(n=>`<span class="tag">${n}</span>`).join('')+(arr.length>30?` <span style="font-size:11px;color:#aaa">+${arr.length-30}</span>`:'');
-  const fmtN=arr=>arr.slice(0,30).map(n=>`<span class="tag need">${n}</span>`).join('')+(arr.length>30?` <span style="font-size:11px;color:#aaa">+${arr.length-30}</span>`:'');
-  if(give.length)body.innerHTML+=`<div class="trade-lbl">${lang==='es'?'Le doy a':'I give to'} ${name} (${give.length})</div><div style="margin-bottom:10px">${fmt(give)}</div>`;
-  if(want.length)body.innerHTML+=`<div class="trade-lbl" style="margin-top:8px">${lang==='es'?'Me da':'Gets from me'} ${name} (${want.length})</div><div>${fmtN(want)}</div>`;
+  const fmt=(arr,cls,sid)=>{
+    const preview=arr.slice(0,20).map(n=>`<span class="tag ${cls}">${n}</span>`).join('');
+    const rest=arr.slice(20).map(n=>`<span class="tag ${cls}">${n}</span>`).join('');
+    const hasMore=arr.length>20;
+    return `${preview}${hasMore?`
+      <button onclick="toggleTradeSection('modal-${sid}')" id="modal-${sid}-btn"
+        style="font-size:11px;color:#4a2d7a;background:none;border:1px solid #4a2d7a;border-radius:10px;padding:2px 8px;cursor:pointer;margin:2px;font-weight:600">
+        +${arr.length-20} ${lang==='es'?'ver más':'see more'}</button>`:''}
+      ${hasMore?`<div id="modal-${sid}-rest" style="display:none">${rest}
+        <button onclick="toggleTradeSection('modal-${sid}')"
+          style="font-size:11px;color:#888;background:none;border:1px solid #ccc;border-radius:10px;padding:2px 8px;cursor:pointer;margin:2px;font-weight:600">
+          ${lang==='es'?'ver menos':'see less'}</button></div>`:''}`;
+  };
+  if(give.length)body.innerHTML+=`<div class="trade-lbl">${lang==='es'?'Le doy a':'I give to'} ${name} (${give.length})</div><div style="margin-bottom:10px">${fmt(give,'','give')}</div>`;
+  if(want.length)body.innerHTML+=`<div class="trade-lbl" style="margin-top:8px">${lang==='es'?'Me da':'Gets from me'} ${name} (${want.length})</div><div>${fmt(want,'need','want')}</div>`;
   document.getElementById('member-modal').classList.add('open');
 }
 
@@ -820,21 +831,53 @@ function renderTrades(){
   const others=allUsers.filter(u=>u.id!==me.id);
   if(!others.length){list.innerHTML=`<div class="empty">${t('no_friends')}</div>`;return;}
   let found=false;
+  const PREVIEW=12;
   others.forEach(u=>{
     const they=allS[u.id]||{};const give=[],want=[];
-    TEAMS.forEach(t=>ids(t).forEach(id=>{
+    TEAMS.forEach(tm=>ids(tm).forEach(id=>{
       if((myS[id]?.repeated_count||0)>0&&!they[id]?.have)give.push(id);
       if(!myS[id]?.have&&(they[id]?.repeated_count||0)>0)want.push(id);
     }));
     if(give.length||want.length){
       found=true;const c=document.createElement('div');c.className='trade-card';
-      let h=`<div class="trade-h">${lang==='es'?'Con':'With'} ${u.name}</div>`;
-      if(give.length)h+=`<div class="trade-lbl">${t('give')} (${give.length})</div><div style="margin-bottom:6px">${give.slice(0,12).map(n=>`<span class="tag">${n}</span>`).join('')}${give.length>12?` <span style="font-size:11px;color:#aaa">+${give.length-12}</span>`:''}</div>`;
-      if(want.length)h+=`<div class="trade-lbl" style="margin-top:6px">${t('receive')} (${want.length})</div><div>${want.slice(0,12).map(n=>`<span class="tag need">${n}</span>`).join('')}${want.length>12?` <span style="font-size:11px;color:#aaa">+${want.length-12}</span>`:''}</div>`;
-      c.innerHTML=h;list.appendChild(c);
+      const uid='trade-'+u.id.slice(0,8);
+
+      const buildSection=(arr,label,cls,sectionId)=>{
+        if(!arr.length)return'';
+        const preview=arr.slice(0,PREVIEW).map(n=>`<span class="tag ${cls}">${n}</span>`).join('');
+        const rest=arr.slice(PREVIEW).map(n=>`<span class="tag ${cls}">${n}</span>`).join('');
+        const hasMore=arr.length>PREVIEW;
+        return `<div class="trade-lbl" style="margin-top:6px">${label} (${arr.length})</div>
+        <div id="${sectionId}-preview">${preview}${hasMore?`
+          <button onclick="toggleTradeSection('${sectionId}')" id="${sectionId}-btn"
+            style="font-size:11px;color:#4a2d7a;background:none;border:1px solid #4a2d7a;border-radius:10px;padding:2px 8px;cursor:pointer;margin:2px;font-weight:600">
+            +${arr.length-PREVIEW} ${lang==='es'?'ver más':'see more'}
+          </button>`:''}</div>
+        ${hasMore?`<div id="${sectionId}-rest" style="display:none">${rest}
+          <button onclick="toggleTradeSection('${sectionId}')"
+            style="font-size:11px;color:#888;background:none;border:1px solid #ccc;border-radius:10px;padding:2px 8px;cursor:pointer;margin:2px;font-weight:600">
+            ${lang==='es'?'ver menos':'see less'}
+          </button></div>`:''}`;
+      };
+
+      c.innerHTML=`<div class="trade-h">${lang==='es'?'Con':'With'} ${u.name}</div>
+        ${buildSection(give,t('give'),'',uid+'-give')}
+        ${buildSection(want,t('receive'),'need',uid+'-want')}`;
+      list.appendChild(c);
     }
   });
   if(!found)list.innerHTML=`<div class="empty">${t('no_trades').replace('\n','<br>')}</div>`;
+}
+
+function toggleTradeSection(id){
+  const preview=document.getElementById(id+'-preview');
+  const rest=document.getElementById(id+'-rest');
+  if(!rest)return;
+  const isHidden=rest.style.display==='none';
+  rest.style.display=isHidden?'block':'none';
+  // Hide/show the "ver más" button inside preview
+  const btn=document.getElementById(id+'-btn');
+  if(btn)btn.style.display=isHidden?'none':'inline';
 }
 
 // ── INVITE ────────────────────────────────────────────────────
