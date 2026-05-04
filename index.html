@@ -658,6 +658,8 @@ async function saveS(id,have,reps){
   myS[String(id)]={have,repeated_count:reps};
   if(!allS[me.id])allS[me.id]={};
   allS[me.id][String(id)]={have,repeated_count:reps};
+  // Also sync allS for current user to match myS completely
+  allS[me.id]=Object.assign({},myS);
 }
 
 async function markAll(mode){
@@ -751,9 +753,11 @@ function renderMembers(){
   const list=document.getElementById('members-list');list.innerHTML='';
   if(!allUsers.length){list.innerHTML=`<div class="empty">${t('no_members')}</div>`;return;}
   allUsers.forEach(u=>{
-    const st=allS[u.id]||{};
+    // For current user always use myS (most up to date), for others use allS
+    const st=u.id===me.id?myS:(allS[u.id]||{});
     const have=Object.values(st).filter(v=>v.have).length;
-    const reps=Object.values(st).reduce((a,v)=>a+(v.repeated_count||0),0);    const pct=Math.round(have/TOTAL*100);
+    const reps=Object.values(st).reduce((a,v)=>a+(v.repeated_count||0),0);
+    const pct=Math.round(have/TOTAL*100);
     const c=document.createElement('div');c.className='member-card';
     c.innerHTML=`<div class="member-top">
       <div class="member-av">${u.name.charAt(0).toUpperCase()}</div>
