@@ -482,7 +482,8 @@ function subscribeRT(){
       newAllS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
     });
     allS=newAllS;
-    if(allS[me.id]){myS={};Object.entries(allS[me.id]).forEach(([k,v])=>{myS[k]=v;});}
+    // Never overwrite myS with potentially stale DB data
+    allS[me.id]=Object.assign({},myS);
     updateStats();
     if(document.getElementById('tab-grupo').style.display!=='none')renderMembers();
     if(document.getElementById('tab-cambios').style.display!=='none')renderTrades();
@@ -514,12 +515,9 @@ async function reloadAndRenderMembers(){
     if(!allS[s.user_id])allS[s.user_id]={};
     allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
   });
-  // Sync my own stickers from fresh data
-  if(allS[me.id]){
-    myS={};
-    Object.entries(allS[me.id]).forEach(([k,v])=>{myS[k]=v;});
-  }
-  updateStats();
+  // NEVER overwrite myS — it's always more current than the DB
+  // Just sync allS[me.id] from myS to reflect latest local state
+  allS[me.id]=Object.assign({},myS);
   renderMembers();
 }
 
@@ -532,11 +530,8 @@ async function reloadAndRenderTrades(){
     if(!allS[s.user_id])allS[s.user_id]={};
     allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
   });
-  if(allS[me.id]){
-    myS={};
-    Object.entries(allS[me.id]).forEach(([k,v])=>{myS[k]=v;});
-  }
-  updateStats();
+  // Never overwrite myS
+  allS[me.id]=Object.assign({},myS);
   renderTrades();
 }
 
