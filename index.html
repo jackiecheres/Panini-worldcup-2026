@@ -157,7 +157,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .invite-sub{font-size:13px;color:#666;margin-bottom:14px;line-height:1.5}
 .btn-copy{padding:10px 24px;background:#4a2d7a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
 
+.falt-block{background:#fff;border-radius:12px;border:1.5px solid #e2dff0;overflow:hidden;margin-bottom:12px}
+.falt-head{padding:8px 14px;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
+.falt-table{width:100%;border-collapse:collapse;font-size:13px}
+.falt-table td{padding:8px 14px;border-bottom:1px solid #f5f5f0;color:#333}
+.falt-table tr:last-child td{border-bottom:none}
+.falt-table td:first-child{color:#aaa;font-weight:600;width:80px}
+.falt-table td:nth-child(2){font-weight:500}
+.falt-count{background:rgba(255,255,255,.25);font-size:11px;padding:2px 8px;border-radius:10px;margin-left:auto}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#4a2d7a;color:#fff;padding:11px 22px;border-radius:30px;font-size:13px;font-weight:700;display:none;z-index:300;white-space:nowrap;box-shadow:0 6px 24px rgba(74,45,122,.5)}
+@media print{body *{visibility:hidden}#print-area,#print-area *{visibility:visible}#print-area{position:fixed;inset:0;background:#fff;padding:20px;overflow:auto;z-index:9999}}
 .toast.show{display:block}
 .empty{text-align:center;padding:2.5rem 1rem;color:#bbb;font-size:14px;line-height:1.6}
 @media(max-width:480px){.grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}.sticker-grid{grid-template-columns:repeat(auto-fill,minmax(50px,1fr))}}
@@ -225,11 +234,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('album')">Mi álbum</button>
-    <button class="tab" onclick="switchTab('repetidas')">Repetidas</button>
-    <button class="tab" onclick="switchTab('grupo')">Grupo</button>
-    <button class="tab" onclick="switchTab('cambios')">Cambios</button>
-    <button class="tab" onclick="switchTab('invitar')">Invitar</button>
+    <button class="tab active" onclick="switchTab('album')" id="tab-btn-album">Mi álbum</button>
+    <button class="tab" onclick="switchTab('faltantes')" id="tab-btn-faltantes">Faltantes</button>
+    <button class="tab" onclick="switchTab('repetidas')" id="tab-btn-repetidas">Repetidas</button>
+    <button class="tab" onclick="switchTab('grupo')" id="tab-btn-grupo">Grupo</button>
+    <button class="tab" onclick="switchTab('cambios')" id="tab-btn-cambios">Cambios</button>
+    <button class="tab" onclick="switchTab('invitar')" id="tab-btn-invitar">Invitar</button>
   </div>
 
   <div id="tab-album" class="content">
@@ -243,15 +253,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
     </div>
     <div class="filter-row">
-      <button class="filter-btn active" onclick="setFilter('todos',this)">Todos</button>
-      <button class="filter-btn" onclick="setFilter('incompleto',this)">Incompletos</button>
-      <button class="filter-btn" onclick="setFilter('completo',this)">Completos</button>
-      <button id="csv-btn" onclick="downloadCSV()" style="margin-left:auto;padding:6px 14px;border-radius:20px;border:1.5px solid #4a2d7a;background:#fff;font-size:12px;cursor:pointer;color:#4a2d7a;font-weight:600">⬇ CSV</button>
+      <button class="filter-btn active" onclick="setFilter('todos',this)" id="f-todos">Todos</button>
+      <button class="filter-btn" onclick="setFilter('incompleto',this)" id="f-inc">Incompletos</button>
+      <button class="filter-btn" onclick="setFilter('completo',this)" id="f-comp">Completos</button>
     </div>
     <div class="grid" id="team-grid"></div>
   </div>
 
+  <div id="tab-faltantes" class="content" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <p style="font-size:13px;color:#888;line-height:1.5" id="faltantes-sub">Estampas que te faltan, agrupadas por equipo.</p>
+      <button onclick="printList('faltantes')" style="flex-shrink:0;margin-left:12px;padding:7px 14px;border-radius:20px;border:1.5px solid #4a2d7a;background:#fff;font-size:12px;cursor:pointer;color:#4a2d7a;font-weight:700">🖨 Imprimir</button>
+    </div>
+    <div id="faltantes-list"></div>
+  </div>
+
   <div id="tab-repetidas" class="content" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <p style="font-size:13px;color:#888;line-height:1.5" id="reps-sub">Tus estampas extra, agrupadas por equipo.</p>
+      <button onclick="printList('repetidas')" style="flex-shrink:0;margin-left:12px;padding:7px 14px;border-radius:20px;border:1.5px solid #4a2d7a;background:#fff;font-size:12px;cursor:pointer;color:#4a2d7a;font-weight:700">🖨 Imprimir</button>
+    </div>
     <div id="reps-list"></div>
   </div>
 
@@ -447,11 +468,35 @@ function subscribeRT(){
 
 // ── TABS ──────────────────────────────────────────────────────
 function switchTab(id){
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['album','repetidas','grupo','cambios','invitar'][i]===id));
-  ['album','repetidas','grupo','cambios','invitar'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===id?'block':'none';});
-  if(id==='grupo')renderMembers();
-  if(id==='cambios')renderTrades();
+  const tabs=['album','faltantes','repetidas','grupo','cambios','invitar'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===id));
+  tabs.forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.style.display=t===id?'block':'none';});
+  if(id==='album')renderGrid();
+  if(id==='faltantes')renderFaltantes();
   if(id==='repetidas')renderReps();
+  if(id==='grupo')reloadAndRenderMembers();
+  if(id==='cambios')reloadAndRenderTrades();
+}
+
+async function reloadAndRenderMembers(){
+  const[{data:users},{data:allSt}]=await Promise.all([
+    sb.from('users').select('id,username,name,photo_url'),
+    sb.from('stickers').select('*')
+  ]);
+  allUsers=users||[];
+  allS={};(allSt||[]).forEach(s=>{if(!allS[s.user_id])allS[s.user_id]={};allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
+  // Also update my own stickers
+  myS={};if(allS[me.id])Object.assign(myS,allS[me.id]);
+  updateStats();
+  renderMembers();
+}
+
+async function reloadAndRenderTrades(){
+  const{data:allSt}=await sb.from('stickers').select('*');
+  allS={};(allSt||[]).forEach(s=>{if(!allS[s.user_id])allS[s.user_id]={};allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
+  myS={};if(allS[me.id])Object.assign(myS,allS[me.id]);
+  updateStats();
+  renderTrades();
 }
 
 // ── STATS ─────────────────────────────────────────────────────
@@ -532,7 +577,7 @@ function renderStickers(){
     const n=openSpecial?null:parseInt(item.id.split('-')[1]);
     const numLabel=openSpecial?item.id:(openTeam.code+'-'+n);
     const tagLabel=openSpecial?item.label:(n===1?'Escudo':'');
-    btn.innerHTML=`<span class="s-num">${numLabel}</span>${tagLabel?`<span class="s-tag">${tagLabel}</span>`:''}<span class="s-tag s-status">${have?(reps>0?'x'+(reps+1):'✓'):''}</span>`;
+    btn.innerHTML=`<span class="s-num">${numLabel}</span>${tagLabel?`<span class="s-tag">${tagLabel}</span>`:''}<span class="s-tag s-status">${have?(reps>0?'+'+reps:'✓'):''}</span>`;
     if(reps>0){const x=document.createElement('span');x.className='del-x';x.textContent='×';x.onclick=(e)=>{e.stopPropagation();onDelete(item.id,btn);};btn.appendChild(x);}
     btn.onclick=()=>cycleSticker(item.id,btn);
     g.appendChild(btn);
@@ -560,7 +605,7 @@ function refreshBtn(btn,have,reps,id){
     statusEl.className='s-tag s-status';
     btn.appendChild(statusEl);
   }
-  statusEl.textContent=have?(reps>0?'x'+(reps+1):'✓'):'';
+  statusEl.textContent=have?(reps>0?'+'+reps:'✓'):'';
   const x=btn.querySelector('.del-x');if(x)x.remove();
   if(reps>0){const nx=document.createElement('span');nx.className='del-x';nx.textContent='×';nx.onclick=(e)=>{e.stopPropagation();onDelete(id,btn);};btn.appendChild(nx);}
 }
@@ -585,6 +630,59 @@ async function markAll(mode){
 }
 
 // ── REPS ──────────────────────────────────────────────────────
+function renderFaltantes(){
+  const list=document.getElementById('faltantes-list');list.innerHTML='';
+  let totalMissing=0;
+
+  // Specials first
+  SPECIALS.forEach(sec=>{
+    const missing=sec.stickers.filter(s=>!getSD(s.id).have);
+    if(!missing.length)return;
+    totalMissing+=missing.length;
+    const block=document.createElement('div');block.className='falt-block';
+    block.innerHTML=`<div class="falt-head" style="background:${sec.color}">
+      <span>${sec.name}</span>
+      <span class="falt-count">${missing.length} ${lang==='es'?'faltan':'missing'}</span>
+    </div>`;
+    const table=document.createElement('table');table.className='falt-table';
+    missing.forEach(s=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${s.id}</td><td>${s.label}</td>`;
+      table.appendChild(tr);
+    });
+    block.appendChild(table);list.appendChild(block);
+  });
+
+  // Teams
+  TEAMS.forEach(team=>{
+    const tids=ids(team);
+    const missing=tids.filter(id=>!getSD(id).have);
+    if(!missing.length)return;
+    totalMissing+=missing.length;
+    const color=GRP_COLORS[team.group]||'#333';
+    const block=document.createElement('div');block.className='falt-block';
+    block.innerHTML=`<div class="falt-head" style="background:${color}">
+      <span style="font-size:18px">${team.flag}</span>
+      <span>${teamName(team)}</span>
+      <span style="font-size:11px;opacity:.8">Gr.${team.group}</span>
+      <span class="falt-count">${missing.length}/20 ${lang==='es'?'faltan':'missing'}</span>
+    </div>`;
+    const table=document.createElement('table');table.className='falt-table';
+    missing.forEach(id=>{
+      const n=parseInt(id.split('-')[1]);
+      const label=n===1?(lang==='es'?'Escudo':'Crest'):n===2?(lang==='es'?'Foto':'Photo'):'Jugador '+(n-2);
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${id}</td><td>${label}</td>`;
+      table.appendChild(tr);
+    });
+    block.appendChild(table);list.appendChild(block);
+  });
+
+  if(!totalMissing){
+    list.innerHTML=`<div class="empty" style="color:#4a9b3f;font-weight:700">🎉 ${lang==='es'?'¡Álbum completo!':'Album complete!'}</div>`;
+  }
+}
+
 function renderReps(){
   const list=document.getElementById('reps-list');list.innerHTML='';let found=false;
   const sections=[...TEAMS.map(t=>({name:t.flag+' '+teamName(t),color:GRP_COLORS[t.group]||'#333',items:Array.from({length:20},(_,i)=>({id:t.code+'-'+(i+1),label:LABELS[i]}))})),...SPECIALS.map(s=>({name:s.name,color:s.color,items:s.stickers}))];
@@ -600,7 +698,7 @@ function renderReps(){
       const row=document.createElement('div');row.className='rep-row';
       row.innerHTML=`<div><span style="font-weight:700">#${numLabel}</span> <span style="color:#aaa;font-size:12px">${labelClean}</span></div>
       <div style="display:flex;align-items:center;gap:8px">
-        <span class="rep-cnt">x${reps+1} (${reps} extra)</span>
+        <span class="rep-cnt">${reps} ${lang==='es'?'extra':'extra'}</span>
         <div class="rep-btns">
           <button class="rep-btn plus" onclick="changeRep('${item.id}',1)">+</button>
           <button class="rep-btn minus" onclick="changeRep('${item.id}',-1)">−</button>
@@ -627,8 +725,7 @@ function renderMembers(){
   allUsers.forEach(u=>{
     const st=allS[u.id]||{};
     const have=Object.values(st).filter(v=>v.have).length;
-    const reps=Object.values(st).reduce((a,v)=>a+(v.repeated_count||0),0);
-    const pct=Math.round(have/TOTAL*100);
+    const reps=Object.values(st).reduce((a,v)=>a+(v.repeated_count||0),0);    const pct=Math.round(have/TOTAL*100);
     const c=document.createElement('div');c.className='member-card';
     c.innerHTML=`<div class="member-top">
       <div class="member-av">${u.name.charAt(0).toUpperCase()}</div>
@@ -733,6 +830,86 @@ function downloadCSV(){
   toast(lang==='es'?'CSV descargado ✓':'CSV downloaded ✓');
 }
 
+function printList(type){
+  const isFalt=type==='faltantes';
+  const title=isFalt
+    ?(lang==='es'?'Estampas Faltantes':'Missing Stickers')
+    :(lang==='es'?'Estampas Repetidas':'Duplicate Stickers');
+  const date=new Date().toLocaleDateString(lang==='es'?'es-MX':'en-US');
+  const user=me?.name||'';
+
+  let rows=[];
+
+  // Specials
+  SPECIALS.forEach(sec=>{
+    const items=isFalt
+      ?sec.stickers.filter(s=>!getSD(s.id).have)
+      :sec.stickers.filter(s=>{const d=getSD(s.id);return d.have&&d.reps>0;});
+    items.forEach(s=>{
+      const reps=getSD(s.id).reps;
+      rows.push({section:sec.name,flag:'',id:s.id,label:s.label,reps});
+    });
+  });
+
+  // Teams
+  TEAMS.forEach(team=>{
+    const tids=ids(team);
+    const filtered=isFalt
+      ?tids.filter(id=>!getSD(id).have)
+      :tids.filter(id=>{const d=getSD(id);return d.have&&d.reps>0;});
+    filtered.forEach(id=>{
+      const n=parseInt(id.split('-')[1]);
+      const label=n===1?(lang==='es'?'Escudo':'Crest'):n===2?(lang==='es'?'Foto':'Photo'):(lang==='es'?'Jugador ':'Player ')+(n-2);
+      const reps=getSD(id).reps;
+      rows.push({section:teamName(team),flag:team.flag,id,label,group:team.group,reps});
+    });
+  });
+
+  // Build print HTML
+  let lastSection='';
+  let tableRows='';
+  rows.forEach(r=>{
+    if(r.section!==lastSection){
+      lastSection=r.section;
+      tableRows+=`<tr style="background:#4a2d7a;color:#fff"><td colspan="${isFalt?3:4}" style="padding:6px 10px;font-weight:700;font-size:12px">${r.flag?r.flag+' ':''} ${r.section}${r.group?' · Gr.'+r.group:''}</td></tr>`;
+    }
+    tableRows+=`<tr>
+      <td style="padding:5px 10px;border-bottom:1px solid #eee;font-weight:600;color:#555">${r.id}</td>
+      <td style="padding:5px 10px;border-bottom:1px solid #eee;color:#333">${r.label}</td>
+      ${!isFalt?`<td style="padding:5px 10px;border-bottom:1px solid #eee;color:#7a5c00;font-weight:600">${r.reps} extra</td>`:''}
+    </tr>`;
+  });
+
+  const html=`
+    <div id="print-area" style="font-family:Arial,sans-serif;background:#fff">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #4a2d7a">
+        <div>
+          <div style="font-size:18px;font-weight:800;color:#4a2d7a">⚽ Panini FIFA World Cup 2026</div>
+          <div style="font-size:14px;color:#666;margin-top:2px">${title} — ${user}</div>
+        </div>
+        <div style="font-size:12px;color:#aaa">${date} · ${rows.length} ${lang==='es'?'estampas':'stickers'}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#f5f5f5">
+          <th style="padding:6px 10px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">ID</th>
+          <th style="padding:6px 10px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">${lang==='es'?'Descripción':'Description'}</th>
+          ${!isFalt?`<th style="padding:6px 10px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Extra</th>`:''}
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      ${rows.length===0?`<p style="text-align:center;color:#4a9b3f;font-weight:700;margin-top:20px">🎉 ${lang==='es'?'¡No hay estampas en esta categoría!':'Nothing here!'}</p>`:''}
+    </div>`;
+
+  // Open print window
+  const w=window.open('','_blank','width=800,height=600');
+  w.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
+    <style>body{margin:0;padding:20px;background:#fff}@media print{@page{margin:15mm}}</style>
+    </head><body>${html}
+    <script>window.onload=function(){window.print();}<\/script>
+    </body></html>`);
+  w.document.close();
+}
+
 function copyLink(){
   navigator.clipboard.writeText(window.location.href).then(()=>toast(t('copied'))).catch(()=>prompt('Copia este link:',window.location.href));
 }
@@ -759,7 +936,7 @@ const T={
     login_err:'Usuario o contraseña incorrectos',
     loading:'Cargando tu colección...',logout:'Salir',
     hello:'Hola, ',
-    tab_album:'Mi álbum',tab_reps:'Repetidas',tab_group:'Grupo',tab_trades:'Cambios',tab_invite:'Invitar',
+    tab_album:'Mi álbum',tab_faltantes:'Faltantes',tab_reps:'Repetidas',tab_group:'Grupo',tab_trades:'Cambios',tab_invite:'Invitar',
     stat_have:'Tengo',stat_missing:'Faltan',stat_reps:'Repetidas',
     progress:'Progreso del álbum',
     filter_all:'Todos',filter_inc:'Incompletos',filter_comp:'Completos',
@@ -791,7 +968,7 @@ const T={
     login_err:'Wrong username or password',
     loading:'Loading your collection...',logout:'Sign out',
     hello:'Hi, ',
-    tab_album:'My album',tab_reps:'Duplicates',tab_group:'Group',tab_trades:'Swaps',tab_invite:'Invite',
+    tab_album:'My album',tab_faltantes:'Missing',tab_reps:'Duplicates',tab_group:'Group',tab_trades:'Swaps',tab_invite:'Invite',
     stat_have:'Have',stat_missing:'Missing',stat_reps:'Duplicates',
     progress:'Album progress',
     filter_all:'All',filter_inc:'Incomplete',filter_comp:'Complete',
@@ -844,7 +1021,7 @@ function applyLang(){
   set('reg-btn',t('reg_btn'));set('lbl-have-account',t('have_account'));
   // Tabs
   const tabs=document.querySelectorAll('.tab');
-  const tk=['tab_album','tab_reps','tab_group','tab_trades','tab_invite'];
+  const tk=['tab_album','tab_faltantes','tab_reps','tab_group','tab_trades','tab_invite'];
   tabs.forEach((tb,i)=>{if(tk[i])tb.textContent=t(tk[i]);});
   // Logout
   set('logout-btn',t('logout'));
@@ -881,6 +1058,7 @@ function applyLang(){
   // Trades sub
   set('trades-sub',t('trades_sub'));
   // Re-render if tabs visible
+  if(document.getElementById('tab-faltantes')?.style.display!=='none')renderFaltantes();
   if(document.getElementById('tab-repetidas')?.style.display!=='none')renderReps();
   if(document.getElementById('tab-grupo')?.style.display!=='none')renderMembers();
   if(document.getElementById('tab-cambios')?.style.display!=='none')renderTrades();
