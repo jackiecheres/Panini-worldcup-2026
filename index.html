@@ -463,13 +463,30 @@ function subscribeRT(){
     if(v)allS[s.user_id][s.sticker_id]=v;else delete allS[s.user_id][s.sticker_id];
     if(s.user_id===me.id){if(v)myS[s.sticker_id]=v;else delete myS[s.sticker_id];}
     updateStats();
-    // Re-render whichever tab is currently visible
     if(document.getElementById('tab-album').style.display!=='none')renderGrid();
     if(document.getElementById('tab-faltantes').style.display!=='none')renderFaltantes();
     if(document.getElementById('tab-repetidas').style.display!=='none')renderReps();
     if(document.getElementById('tab-grupo').style.display!=='none')renderMembers();
     if(document.getElementById('tab-cambios').style.display!=='none')renderTrades();
   }).subscribe();
+
+  // Polling every 30s as fallback for grupo/cambios
+  setInterval(async()=>{
+    if(document.getElementById('tab-grupo').style.display==='none'&&
+       document.getElementById('tab-cambios').style.display==='none') return;
+    const{data:allSt}=await sb.from('stickers').select('*');
+    if(!allSt)return;
+    const newAllS={};
+    allSt.forEach(s=>{
+      if(!newAllS[s.user_id])newAllS[s.user_id]={};
+      newAllS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
+    });
+    allS=newAllS;
+    if(allS[me.id]){myS={};Object.entries(allS[me.id]).forEach(([k,v])=>{myS[k]=v;});}
+    updateStats();
+    if(document.getElementById('tab-grupo').style.display!=='none')renderMembers();
+    if(document.getElementById('tab-cambios').style.display!=='none')renderTrades();
+  },30000);
 }
 
 // ── TABS ──────────────────────────────────────────────────────
@@ -658,48 +675,35 @@ function renderFaltantes(){
   const list=document.getElementById('faltantes-list');list.innerHTML='';
   let totalMissing=0;
 
-  // Specials first
-  SPECIALS.forEach(sec=>{
-    const missing=sec.stickers.filter(s=>!getSD(s.id).have);
-    if(!missing.length)return;
-    totalMissing+=missing.length;
-    const block=document.createElement('div');block.className='falt-block';
-    block.innerHTML=`<div class="falt-head" style="background:${sec.color}">
-      <span>${sec.name}</span>
-      <span class="falt-count">${missing.length} ${lang==='es'?'faltan':'missing'}</span>
-    </div>`;
-    const table=document.createElement('table');table.className='falt-table';
-    missing.forEach(s=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${s.id}</td><td>${s.label}</td>`;
-      table.appendChild(tr);
+  const addSection=(name,flag,color,group,items)=>{
+    if(!items.length)return;
+    totalMissing+=items.length;
+    const block=document.createElement('div');
+    block.style='margin-bottom:10px';
+    const head=document.createElement('div');
+    head.style=`background:${color};color:#fff;padding:4px 8px;font-size:11px;font-weight:700;border-radius:4px 4px 0 0;display:inline-flex;align-items:center;gap:5px`;
+    head.innerHTML=`${flag?`<span style="font-size:15px">${flag}</span>`:''}${name}${group?` · Gr.${group}`:''} <span style="opacity:.7;font-weight:400">(${items.length})</span>`;
+    const wrap=document.createElement('div');
+    wrap.style='border:1px solid #ddd;border-radius:0 4px 4px 4px;padding:6px 4px 4px;background:#fff';
+    items.forEach(id=>{
+      const shortId=String(id).replace('-','');
+      const chip=document.createElement('span');
+      chip.style='display:inline-block;border:1px solid #ccc;border-radius:4px;padding:3px 7px;font-size:12px;font-weight:700;margin:2px;background:#f9f9f9;color:#333';
+      chip.textContent=shortId;
+      wrap.appendChild(chip);
     });
-    block.appendChild(table);list.appendChild(block);
+    block.appendChild(head);block.appendChild(wrap);
+    list.appendChild(block);
+  };
+
+  SPECIALS.forEach(sec=>{
+    const missing=sec.stickers.filter(s=>!getSD(s.id).have).map(s=>s.id);
+    addSection(sec.name,'','#7c4daa','',missing);
   });
 
-  // Teams
   TEAMS.forEach(team=>{
-    const tids=ids(team);
-    const missing=tids.filter(id=>!getSD(id).have);
-    if(!missing.length)return;
-    totalMissing+=missing.length;
-    const color=GRP_COLORS[team.group]||'#333';
-    const block=document.createElement('div');block.className='falt-block';
-    block.innerHTML=`<div class="falt-head" style="background:${color}">
-      <span style="font-size:18px">${team.flag}</span>
-      <span>${teamName(team)}</span>
-      <span style="font-size:11px;opacity:.8">Gr.${team.group}</span>
-      <span class="falt-count">${missing.length}/20 ${lang==='es'?'faltan':'missing'}</span>
-    </div>`;
-    const table=document.createElement('table');table.className='falt-table';
-    missing.forEach(id=>{
-      const n=parseInt(id.split('-')[1]);
-      const label=n===1?(lang==='es'?'Escudo':'Crest'):n===2?(lang==='es'?'Foto':'Photo'):'Jugador '+(n-2);
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${id}</td><td>${label}</td>`;
-      table.appendChild(tr);
-    });
-    block.appendChild(table);list.appendChild(block);
+    const missing=ids(team).filter(id=>!getSD(id).have);
+    addSection(teamName(team),team.flag,GRP_COLORS[team.group]||'#333',team.group,missing);
   });
 
   if(!totalMissing){
