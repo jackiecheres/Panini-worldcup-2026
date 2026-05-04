@@ -431,18 +431,24 @@ function doLogout(){
 // ── LOAD ──────────────────────────────────────────────────────
 async function loadMain(){
   setLoading(t('loading'));
-  const[{data:mySt,error:e1},{data:users,error:e2},{data:allSt,error:e3}]=await Promise.all([
-    sb.from('stickers').select('*').eq('user_id',me.id),
+  const[{data:users,error:e2},{data:allSt,error:e3}]=await Promise.all([
     sb.from('users').select('id,username,name,photo_url'),
     sb.from('stickers').select('*')
   ]);
-  if(e1||e2||e3){
-    document.getElementById('loading-msg').textContent='Error al cargar: '+(e1||e2||e3).message;
+  if(e2||e3){
+    document.getElementById('loading-msg').textContent='Error al cargar: '+(e2||e3).message;
     return;
   }
-  myS={};(mySt||[]).forEach(s=>{myS[s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
   allUsers=users||[];
-  allS={};(allSt||[]).forEach(s=>{if(!allS[s.user_id])allS[s.user_id]={};allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};});
+  // Build allS from single source
+  allS={};
+  (allSt||[]).forEach(s=>{
+    if(!allS[s.user_id])allS[s.user_id]={};
+    allS[s.user_id][s.sticker_id]={have:s.have,repeated_count:s.repeated_count};
+  });
+  // Derive myS from allS — single source of truth
+  myS={};
+  if(allS[me.id]){Object.entries(allS[me.id]).forEach(([k,v])=>{myS[k]={...v};});}
   hideLoading();
   document.getElementById('screen-auth').classList.remove('active');
   document.getElementById('screen-main').classList.add('active');
@@ -650,10 +656,10 @@ async function saveS(id,have,reps){
   setSyncing('syncing');
   const{error}=await sb.from('stickers').upsert({user_id:me.id,sticker_id:String(id),have,repeated_count:reps,updated_at:new Date().toISOString()},{onConflict:'user_id,sticker_id'});
   setSyncing(error?'error':'ok');
+  // Update myS
   myS[String(id)]={have,repeated_count:reps};
+  // Keep allS[me.id] as exact mirror of myS
   if(!allS[me.id])allS[me.id]={};
-  allS[me.id][String(id)]={have,repeated_count:reps};
-  // Also sync allS for current user to match myS completely
   allS[me.id]=Object.assign({},myS);
 }
 
